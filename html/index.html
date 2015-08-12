@@ -1,0 +1,111 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title><%title%></title>
+  <link rel="stylesheet" type="text/css" href="css/map.css" />
+  <link rel="stylesheet" type="text/css" href="css/color.css" />
+  <link rel="stylesheet" type="text/css" href="css/tip.css" />
+  <link rel="stylesheet" type="text/css" href="css/legend.css" />
+  <link rel="stylesheet" type="text/css" href="css/c3.min.css" />
+  <script src="http://d3js.org/d3.v3.min.js"></script>
+  <script src="http://d3js.org/topojson.v1.min.js"></script>
+  <script src="http://d3js.org/queue.v1.min.js"></script>
+  <script src="http://d3js.org/d3.geo.projection.v0.min.js"></script>
+  <script src="http://underscorejs.org/underscore-min.js"></script>
+  <script src="js/map.tip.js"></script>
+  <script src="js/map.legend.js"></script>
+  <script src="js/c3.min.js"></script>
+  <style type="text/css">
+      body {
+          font-family: sans-serif;
+          -webkit-text-size-adjust: 100%;
+          -ms-text-size-adjust: 100%;
+          text-size-adjust: 100%;
+      }
+  </style>
+</head>
+
+<body style="text-align:center">
+<%header%>
+  <div id="map"></div>
+  <div id="template" style="display: none">
+    <!--Tooltip template-->
+<%tooltiptemplate%>
+  </div>
+<%externallegend%>
+<%externaltip%>
+  <script>
+    //Basic settings
+    var width = <%width%>;
+    var height = <%height%>;
+    var _data = void 0;
+
+    //Projection
+    var projection = <%projection%>;
+    var path = d3.geo.path().projection(projection);
+	    
+    //Map container
+    var svg = d3.select("#map")
+      .append("svg")
+	  .attr("id", "mapSvg")
+      .attr("width", width)
+      .attr("height", height)
+<%hidetip%>
+	  .append("g");
+      
+<%attachzoom%>
+	
+    //Vector group
+    var vectors = svg.append("g")
+      .attr("class", "polygon");
+      
+    //Overlay
+    vectors.append("rect")
+      .attr("class", "overlay")
+      .attr("width", width)
+      .attr("height", height);
+
+<%attachtip%>
+
+    //Vector polygons
+<%vectorpaths%>
+
+    //Download
+    queue(2)
+<%queuefiles%>
+      .await(ready);
+
+    //Load map when downloaded
+    function ready(error<%readyparams%>) {
+      if (error) return console.error(error);
+	  
+      //Polygon features
+<%polygonobjects%>
+	    
+      // Refine projection
+      var b, s, t;
+      projection.scale(1).translate([0, 0]);
+      var b = path.bounds(<%mainobject%>);
+      var s = .95 / Math.max((b[1][0] - b[0][0]) / width, (b[1][1] - b[0][1]) / height);
+      var t = [(width - s * (b[1][0] + b[0][0])) / 2, (height - s * (b[1][1] + b[0][1])) / 2];
+      projection.scale(s).translate(t);
+
+      //Add all vector features
+      path.pointRadius(0.1);
+<%vectorfeatures%>
+    
+<%datastore%>
+
+<%addlegend%>
+    }
+
+<%tipfunctions%>
+
+<%chartfunction%>
+  
+<%zoomfunction%>
+  
+ </script>
+</body>
+</html>

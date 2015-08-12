@@ -1,0 +1,37 @@
+# This file contains metadata for your plugin. Since 
+# version 2.0 of QGIS this is the proper way to supply 
+# information about a plugin. The old method of 
+# embedding metadata in __init__.py will 
+# is no longer supported since version 2.0.
+
+# This file should be included when you package your plugin.# Mandatory items:
+
+[general]
+name=d3 Map Renderer
+qgisMinimumVersion=2.0
+description=A QGIS plugin to export of polygons, polylines and point vector layers to topojson and display within a d3 map, with the option of tooltips and a legend.
+version=0.7
+author=Simon Benten
+email=swbenten@gmail.com
+
+# End of mandatory metadata
+
+# Recommended items:
+
+# Uncomment the following line and add your changelog:
+changelog=Initial version allowing the export of polygons, polylines and point vector layers to topojson. Includes support for many different d3 projections. Coming soon...Basic data visualization in the tooltip. Better point support. Labels. Orthographic projections.
+
+# Tags are comma separated with spaces allowed
+tags=attribute, csv, export, geojson, topojson, html, legend, point, polygon, polyline, shapefile, web, web map, d3
+
+homepage=https://github.com/sbenten/d3MapRenderer
+tracker=https://github.com/sbenten/d3MapRenderer/issues
+repository=https://github.com/sbenten/d3MapRenderer
+category=Web
+icon=icon.png
+# experimental flag
+experimental=True
+
+# deprecated flag (applies to the whole plugin, not just a single version)
+deprecated=False
+

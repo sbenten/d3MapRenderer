@@ -1,0 +1,993 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>d3MapRendererDialogBase</class>
+ <widget class="QDialog" name="d3MapRendererDialogBase">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>800</width>
+    <height>563</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>d3 Map Renderer</string>
+  </property>
+  <property name="windowIcon">
+   <iconset>
+    <normaloff>../../../../.designer/backup/icon.png</normaloff>../../../../.designer/backup/icon.png</iconset>
+  </property>
+  <widget class="QTabWidget" name="tab">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>10</y>
+     <width>781</width>
+     <height>515</height>
+    </rect>
+   </property>
+   <property name="toolTip">
+    <string/>
+   </property>
+   <property name="currentIndex">
+    <number>2</number>
+   </property>
+   <widget class="QWidget" name="map">
+    <attribute name="title">
+     <string>Map</string>
+    </attribute>
+    <attribute name="toolTip">
+     <string>Map settings</string>
+    </attribute>
+    <widget class="QCheckBox" name="legendCheckBox">
+     <property name="geometry">
+      <rect>
+       <x>180</x>
+       <y>385</y>
+       <width>20</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="toolTip">
+      <string>Display a legend based on the categorised or graduated symbols selected for the main layer?</string>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+    <widget class="QComboBox" name="legendPositionComboBox">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="geometry">
+      <rect>
+       <x>180</x>
+       <y>420</y>
+       <width>591</width>
+       <height>27</height>
+      </rect>
+     </property>
+     <property name="toolTip">
+      <string>Display the legend in one of the four corners of the map, or position it yourself later.</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="legendPositionLabel">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>420</y>
+       <width>161</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Legend position</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="outputEdit">
+     <property name="geometry">
+      <rect>
+       <x>178</x>
+       <y>255</y>
+       <width>471</width>
+       <height>27</height>
+      </rect>
+     </property>
+     <property name="toolTip">
+      <string>The directory to output the files required for the d3 visualisation.</string>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="outputButton">
+     <property name="geometry">
+      <rect>
+       <x>658</x>
+       <y>255</y>
+       <width>112</width>
+       <height>27</height>
+      </rect>
+     </property>
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="layoutDirection">
+      <enum>Qt::LeftToRight</enum>
+     </property>
+     <property name="text">
+      <string>Browse</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="titleLabel">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>10</y>
+       <width>161</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Title</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="titleEdit">
+     <property name="geometry">
+      <rect>
+       <x>178</x>
+       <y>10</y>
+       <width>591</width>
+       <height>27</height>
+      </rect>
+     </property>
+     <property name="toolTip">
+      <string>The title for the web page, and page header (if chosen)</string>
+     </property>
+    </widget>
+    <widget class="QComboBox" name="projectionComboBox">
+     <property name="geometry">
+      <rect>
+       <x>178</x>
+       <y>185</y>
+       <width>591</width>
+       <height>27</height>
+      </rect>
+     </property>
+     <property name="toolTip">
+      <string>The d3 projection for the map. </string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="simplificationLabel">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>220</y>
+       <width>161</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Simplification level</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+     </property>
+    </widget>
+    <widget class="QLabel" name="panZoomLabel">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>350</y>
+       <width>158</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Allow zoom and pan?</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+     </property>
+    </widget>
+    <widget class="QLabel" name="outputLabel">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>255</y>
+       <width>161</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Output directory</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+     </property>
+    </widget>
+    <widget class="QCheckBox" name="panZoomCheckBox">
+     <property name="geometry">
+      <rect>
+       <x>180</x>
+       <y>350</y>
+       <width>20</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="toolTip">
+      <string>Allow the user to zoom and pan around the d3 map?</string>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+    <widget class="QLabel" name="legendLabel">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>385</y>
+       <width>161</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Include a legend?</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+     </property>
+    </widget>
+    <widget class="QLabel" name="mainLayerLabel">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>115</y>
+       <width>161</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Main layer</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+     </property>
+    </widget>
+    <widget class="QLabel" name="projectionLabel">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>185</y>
+       <width>161</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Projection</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+     </property>
+    </widget>
+    <widget class="QComboBox" name="mainLayerComboBox">
+     <property name="geometry">
+      <rect>
+       <x>178</x>
+       <y>115</y>
+       <width>591</width>
+       <height>27</height>
+      </rect>
+     </property>
+     <property name="toolTip">
+      <string>The layer within the QGIS project that contains the information to be visualised.</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="widthEdit">
+     <property name="geometry">
+      <rect>
+       <x>178</x>
+       <y>80</y>
+       <width>201</width>
+       <height>27</height>
+      </rect>
+     </property>
+     <property name="toolTip">
+      <string>The width in pixels of the d3 map. Choose the width and height to fit the orientation of the map.</string>
+     </property>
+     <property name="inputMask">
+      <string>0000; </string>
+     </property>
+     <property name="text">
+      <string>800</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="widthLabel">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>80</y>
+       <width>161</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Width</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="heightEdit">
+     <property name="geometry">
+      <rect>
+       <x>558</x>
+       <y>80</y>
+       <width>210</width>
+       <height>27</height>
+      </rect>
+     </property>
+     <property name="toolTip">
+      <string>The height in pixels of the d3 map. Choose the width and height to fit the orientation of the map.</string>
+     </property>
+     <property name="inputMask">
+      <string>0000; </string>
+     </property>
+     <property name="text">
+      <string>600</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="heightLabel">
+     <property name="geometry">
+      <rect>
+       <x>390</x>
+       <y>80</y>
+       <width>161</width>
+       <height>26</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Height</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+     </property>
+    </widget>
+    <widget class="QComboBox" name="idComboBox">
+     <property name="geometry">
+      <rect>
+       <x>178</x>
+       <y>150</y>
+       <width>591</width>
+       <height>27</height>
+      </rect>
+     </property>
+     <property name="toolTip">
+      <string>The unique ID field within the main layers attribute table.</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="idLabel">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>150</y>
+       <width>161</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>ID field</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+     </property>
+    </widget>
+    <widget class="QSlider" name="simplificationSlider">
+     <property name="geometry">
+      <rect>
+       <x>178</x>
+       <y>220</y>
+       <width>471</width>
+       <height>22</height>
+      </rect>
+     </property>
+     <property name="toolTip">
+      <string>The simplification level used during the creation of the topojson file, with options from none to extreme.</string>
+     </property>
+     <property name="maximum">
+      <number>90</number>
+     </property>
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+    </widget>
+    <widget class="QLabel" name="chosenSimpLabel">
+     <property name="geometry">
+      <rect>
+       <x>658</x>
+       <y>220</y>
+       <width>112</width>
+       <height>27</height>
+      </rect>
+     </property>
+     <property name="toolTip">
+      <string>Simplification level (Steradians)</string>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+    <widget class="QLabel" name="headerLabel">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>45</y>
+       <width>171</width>
+       <height>27</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Include page heading?</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+     </property>
+    </widget>
+    <widget class="QCheckBox" name="headerCheckBox">
+     <property name="geometry">
+      <rect>
+       <x>180</x>
+       <y>45</y>
+       <width>104</width>
+       <height>27</height>
+      </rect>
+     </property>
+     <property name="toolTip">
+      <string>Use the title as the page heading?</string>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+   </widget>
+   <widget class="QWidget" name="extras">
+    <attribute name="title">
+     <string>Extras</string>
+    </attribute>
+    <attribute name="toolTip">
+     <string>Include extra layers</string>
+    </attribute>
+    <widget class="QWidget" name="formLayoutWidget_2">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>0</y>
+       <width>781</width>
+       <height>811</height>
+      </rect>
+     </property>
+     <layout class="QFormLayout" name="extrasLayout">
+      <property name="fieldGrowthPolicy">
+       <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
+      </property>
+      <property name="horizontalSpacing">
+       <number>10</number>
+      </property>
+      <property name="verticalSpacing">
+       <number>10</number>
+      </property>
+      <property name="margin">
+       <number>10</number>
+      </property>
+      <item row="0" column="0">
+       <widget class="QLabel" name="incExtraVectorLabel">
+        <property name="text">
+         <string>Include other vector layers?</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QCheckBox" name="extraVectorCheckBox">
+        <property name="toolTip">
+         <string>Include other vector layers in the visualisation?</string>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="extraVectorLabel">
+        <property name="text">
+         <string>Vector layers</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QTreeWidget" name="extraVectorTreeWidget">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="toolTip">
+         <string>Choose additional layers to output.</string>
+        </property>
+        <property name="autoScroll">
+         <bool>false</bool>
+        </property>
+        <attribute name="headerVisible">
+         <bool>false</bool>
+        </attribute>
+        <column>
+         <property name="text">
+          <string notr="true">1</string>
+         </property>
+        </column>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </widget>
+   <widget class="QWidget" name="popup">
+    <attribute name="title">
+     <string>Popup</string>
+    </attribute>
+    <attribute name="toolTip">
+     <string>Popup information</string>
+    </attribute>
+    <widget class="QWidget" name="formLayoutWidget_3">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>0</y>
+       <width>781</width>
+       <height>811</height>
+      </rect>
+     </property>
+     <layout class="QFormLayout" name="formLayout">
+      <property name="fieldGrowthPolicy">
+       <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
+      </property>
+      <property name="horizontalSpacing">
+       <number>10</number>
+      </property>
+      <property name="verticalSpacing">
+       <number>10</number>
+      </property>
+      <property name="margin">
+       <number>10</number>
+      </property>
+      <item row="0" column="0">
+       <widget class="QLabel" name="incPopupLabel">
+        <property name="text">
+         <string>Include information popup?</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QCheckBox" name="incPopupCheckBox">
+        <property name="toolTip">
+         <string>Allow the display of attribute information when the user clicks on an object from the main layer?</string>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="popupPositionLabel">
+        <property name="text">
+         <string>Popup position</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QComboBox" name="popupPositionComboBox">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="toolTip">
+         <string>Display attribute information as a bubble popup, or position it yourself later.</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="popupFieldsLabel">
+        <property name="text">
+         <string>Popup fields</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="popupPreviewLabel">
+        <property name="text">
+         <string>Preview</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QTreeWidget" name="popupTreeWidget">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="toolTip">
+         <string>Choose information from the main layer attributes.</string>
+        </property>
+        <attribute name="headerVisible">
+         <bool>false</bool>
+        </attribute>
+        <column>
+         <property name="text">
+          <string notr="true">1</string>
+         </property>
+        </column>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="QPlainTextEdit" name="popupPreviewEdit">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="toolTip">
+         <string>Preview of the popup information which will be output by the plugin. Can be altered later.</string>
+        </property>
+        <property name="readOnly">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </widget>
+   <widget class="QWidget" name="tab_2">
+    <attribute name="title">
+     <string>Viz</string>
+    </attribute>
+    <widget class="QLabel" name="incVizLabel">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>10</y>
+       <width>161</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Include viz in popup?</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+     </property>
+    </widget>
+    <widget class="QCheckBox" name="incVizCheckBox">
+     <property name="geometry">
+      <rect>
+       <x>180</x>
+       <y>10</y>
+       <width>104</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="toolTip">
+      <string>Include a chart within the information popup? Uses the popup defined on the previous tab as the host.</string>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+    <widget class="QLabel" name="vizFieldsLabel">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>108</y>
+       <width>161</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Viz fields</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+     </property>
+    </widget>
+    <widget class="QTreeWidget" name="vizTreeWidget">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="geometry">
+      <rect>
+       <x>180</x>
+       <y>108</y>
+       <width>540</width>
+       <height>162</height>
+      </rect>
+     </property>
+     <property name="toolTip">
+      <string>The numeric attributes from the main layer for inclusion as data range along the X-axis.
+Choose data which fits the chosen chart type.</string>
+     </property>
+     <attribute name="headerVisible">
+      <bool>false</bool>
+     </attribute>
+     <column>
+      <property name="text">
+       <string notr="true">1</string>
+      </property>
+     </column>
+    </widget>
+    <widget class="QPushButton" name="addRangeButton">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="geometry">
+      <rect>
+       <x>725</x>
+       <y>108</y>
+       <width>45</width>
+       <height>45</height>
+      </rect>
+     </property>
+     <property name="toolTip">
+      <string>Add the currently selected fields as a data range.</string>
+     </property>
+     <property name="text">
+      <string>+</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="vizRangesLabel">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>277</y>
+       <width>161</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Data ranges</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+     </property>
+    </widget>
+    <widget class="QPlainTextEdit" name="vizPreviewEdit">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="geometry">
+      <rect>
+       <x>180</x>
+       <y>277</y>
+       <width>540</width>
+       <height>162</height>
+      </rect>
+     </property>
+     <property name="toolTip">
+      <string>Comma separated preview of the data range(s), with the specified name and attribute field(s).</string>
+     </property>
+     <property name="lineWrapMode">
+      <enum>QPlainTextEdit::NoWrap</enum>
+     </property>
+     <property name="readOnly">
+      <bool>true</bool>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="delRangeButton">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="geometry">
+      <rect>
+       <x>725</x>
+       <y>277</y>
+       <width>45</width>
+       <height>45</height>
+      </rect>
+     </property>
+     <property name="toolTip">
+      <string>Remove the last added data range from the list.</string>
+     </property>
+     <property name="text">
+      <string>-</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="vizLabelsLineEdit">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="geometry">
+      <rect>
+       <x>180</x>
+       <y>445</y>
+       <width>541</width>
+       <height>27</height>
+      </rect>
+     </property>
+     <property name="toolTip">
+      <string>Comma separated list of numeric labels for the X-axis, limited to 10 numeric characters for each label.</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="vizLabelsLabel">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>445</y>
+       <width>161</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>X-axis labels</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="vizWidthEdit">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="geometry">
+      <rect>
+       <x>180</x>
+       <y>74</y>
+       <width>201</width>
+       <height>27</height>
+      </rect>
+     </property>
+     <property name="toolTip">
+      <string>The width in pixels of the chart. Choose the width and height to fit the orientation of the chart.</string>
+     </property>
+     <property name="inputMask">
+      <string>000; </string>
+     </property>
+     <property name="text">
+      <string>240</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="vizHeightEdit">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="geometry">
+      <rect>
+       <x>510</x>
+       <y>74</y>
+       <width>210</width>
+       <height>27</height>
+      </rect>
+     </property>
+     <property name="toolTip">
+      <string>The height in pixels of the chart. Choose the width and height to fit the orientation of the chart.</string>
+     </property>
+     <property name="inputMask">
+      <string>000; </string>
+     </property>
+     <property name="text">
+      <string>240</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="widthLabel_2">
+     <property name="geometry">
+      <rect>
+       <x>12</x>
+       <y>74</y>
+       <width>161</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Width</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+     </property>
+    </widget>
+    <widget class="QLabel" name="heightLabel_2">
+     <property name="geometry">
+      <rect>
+       <x>390</x>
+       <y>74</y>
+       <width>111</width>
+       <height>26</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Height</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+     </property>
+    </widget>
+    <widget class="QComboBox" name="vizTypeComboBox">
+     <property name="geometry">
+      <rect>
+       <x>180</x>
+       <y>40</y>
+       <width>541</width>
+       <height>27</height>
+      </rect>
+     </property>
+     <property name="toolTip">
+      <string>Choose from the list of supported C3.js charts.</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="vizTypeLabel">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>40</y>
+       <width>161</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Chart type</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+     </property>
+    </widget>
+   </widget>
+  </widget>
+  <widget class="QDialogButtonBox" name="buttonBox">
+   <property name="geometry">
+    <rect>
+     <x>560</x>
+     <y>527</y>
+     <width>233</width>
+     <height>34</height>
+    </rect>
+   </property>
+   <property name="standardButtons">
+    <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+   </property>
+  </widget>
+ </widget>
+ <tabstops>
+  <tabstop>tab</tabstop>
+  <tabstop>titleEdit</tabstop>
+  <tabstop>headerCheckBox</tabstop>
+  <tabstop>widthEdit</tabstop>
+  <tabstop>heightEdit</tabstop>
+  <tabstop>mainLayerComboBox</tabstop>
+  <tabstop>idComboBox</tabstop>
+  <tabstop>projectionComboBox</tabstop>
+  <tabstop>simplificationSlider</tabstop>
+  <tabstop>outputEdit</tabstop>
+  <tabstop>outputButton</tabstop>
+  <tabstop>panZoomCheckBox</tabstop>
+  <tabstop>legendCheckBox</tabstop>
+  <tabstop>legendPositionComboBox</tabstop>
+  <tabstop>extraVectorCheckBox</tabstop>
+  <tabstop>extraVectorTreeWidget</tabstop>
+  <tabstop>incPopupCheckBox</tabstop>
+  <tabstop>popupPositionComboBox</tabstop>
+  <tabstop>popupTreeWidget</tabstop>
+  <tabstop>popupPreviewEdit</tabstop>
+  <tabstop>incVizCheckBox</tabstop>
+  <tabstop>vizTypeComboBox</tabstop>
+  <tabstop>vizWidthEdit</tabstop>
+  <tabstop>vizHeightEdit</tabstop>
+  <tabstop>vizTreeWidget</tabstop>
+  <tabstop>addRangeButton</tabstop>
+  <tabstop>vizPreviewEdit</tabstop>
+  <tabstop>delRangeButton</tabstop>
+  <tabstop>vizLabelsLineEdit</tabstop>
+  <tabstop>buttonBox</tabstop>
+ </tabstops>
+ <resources/>
+ <connections/>
+</ui>
