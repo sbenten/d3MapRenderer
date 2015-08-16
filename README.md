@@ -47,7 +47,7 @@ That wasn’t so bad was it?
 Soon to be uploaded to the QGIS plugin repository as an experimental plugin.
 
 
-If you want to try the bleeding edge version, [download the zip](https://github.com/sbenten/d3MapRenderer/archive/master.zip) direct from GitHub, and extract the contents into your QGIS python plugins directory (which on Windows is something along the lines of C:\Users\Simon\.qgis2\python\plugins\). Rename the folder from d3MapRenderer-master to just d3MapRenderer and you will find the plugin listed along side the others in the QGIS plugin repository.   
+If you want to try the bleeding edge version, [download the zip](https://github.com/sbenten/d3MapRenderer/archive/master.zip) direct from GitHub, and extract the contents into your QGIS python plugins directory (which on Windows is something along the lines of C:\Users\Simon\\.qgis2\python\plugins\). Rename the folder from d3MapRenderer-master to just d3MapRenderer and you will find the plugin listed along side the others in the QGIS plugin repository.   
 
 
 ## Using the plugin
@@ -80,13 +80,13 @@ The [issue](https://github.com/sbenten/d3MapRenderer/issues) log is to be used f
 Before reporting an issue, please do the following:
 
 
-1. Search for existing [issues](https://github.com/sbenten/d3MapRenderer/issues) to ensure you're not creating a duplicate issues.
+1. Search for existing [issues](https://github.com/sbenten/d3MapRenderer/issues) to ensure you're not creating a duplicate.
 
 
-1. When posting the issue, please use a descriptive title, include the plugin version and relevant details about what parameters were entered into the plugin. 
+1. When posting the issue, please use a descriptive title, include the plugin version and relevant details about what was trying to be achieved with the plugin. 
 
 
-1. When posting the issue, please post the details from the Log Messages Panel within QGIS, and if possible a link to download the pertinent shapefiles. A sample of the log messages for the plugin:
+1. Also, please post the details from the Log Messages Panel within QGIS, and if possible a link to download the pertinent shapefiles. A sample of the log messages for the plugin:
 
 
 ```
