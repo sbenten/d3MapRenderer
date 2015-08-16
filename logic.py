@@ -771,7 +771,7 @@ class model:
             progress.setValue(tick)
                 
             # start browser
-            # TODO: Crfeate separate settings dialog
+            # TODO: Create separate settings dialog
             # TODO: Option of opening file browser
             # TODO: Option of specifying a web server URL
             webbrowser.open_new_tab("http://127.0.0.1:8080/{0}/index.html".format(uid))

@@ -140,8 +140,10 @@ class outputVars:
         
         if self.tipInUse() == True:
             val = template.replace("<%idfield%>", self.idField)
+            cobj = ""
             if self.vizInUse() == True:
-                val = val.replace("<%chart%>", "chart(obj);")
+                cobj = "chart(obj);"
+            val = val.replace("<%chart%>", cobj)
                 
         return val
      

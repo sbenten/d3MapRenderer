@@ -210,7 +210,7 @@ class winHelper(helper):
         except CalledProcessError as e:  
             result = e.output
             
-            self.__logger.error(e.command + "\r\n" + e.output)  
+            self.__logger.error(e.cmd + "\r\n" + e.output)  
             
         return result
     

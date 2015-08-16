@@ -709,38 +709,41 @@ class d3MapRenderer:
 
     def disposeUI(self):
         """Unbind events and reset state to match the model"""
-        self.dlg.titleEdit.textChanged.disconnect()
-        self.dlg.headerCheckBox.stateChanged.disconnect()
-        self.dlg.widthEdit.textChanged.disconnect()
-        self.dlg.heightEdit.textChanged.disconnect()
-        self.dlg.mainLayerComboBox.currentIndexChanged.disconnect()
-        self.dlg.idComboBox.currentIndexChanged.disconnect()
-        self.dlg.projectionComboBox.currentIndexChanged.disconnect()
-        self.dlg.simplificationSlider.valueChanged.disconnect()
-        self.dlg.outputEdit.textChanged.disconnect()
-        self.dlg.outputButton.clicked.disconnect()
-        self.dlg.panZoomCheckBox.stateChanged.disconnect()
-        self.dlg.legendCheckBox.stateChanged.disconnect()
-        self.dlg.legendPositionComboBox.currentIndexChanged.disconnect()
-        # extras tab        
-        self.dlg.extraVectorCheckBox.stateChanged.disconnect()
-        self.dlg.extraVectorTreeWidget.itemClicked.disconnect()
-        # popup tab
-        self.dlg.incPopupCheckBox.stateChanged.disconnect()
-        self.dlg.popupPositionComboBox.currentIndexChanged.disconnect()
-        self.dlg.popupTreeWidget.itemClicked.disconnect()
-        # viz tab
-        self.dlg.incVizCheckBox.stateChanged.disconnect()
-        self.dlg.vizTypeComboBox.currentIndexChanged.disconnect()
-        self.dlg.vizWidthEdit.textChanged.disconnect()
-        self.dlg.vizHeightEdit.textChanged.disconnect()
-        self.dlg.vizTreeWidget.itemClicked.disconnect()
-        self.dlg.addRangeButton.clicked.disconnect()
-        self.dlg.delRangeButton.clicked.disconnect()
-        self.dlg.vizLabelsLineEdit.textChanged.disconnect()
-        # buttons
-        self.dlg.buttonBox.button(QDialogButtonBox.Cancel).clicked.disconnect()
-        self.dlg.buttonBox.button(QDialogButtonBox.Ok).clicked.disconnect()
+        try:
+            self.dlg.titleEdit.textChanged.disconnect()
+            self.dlg.headerCheckBox.stateChanged.disconnect()
+            self.dlg.widthEdit.textChanged.disconnect()
+            self.dlg.heightEdit.textChanged.disconnect()
+            self.dlg.mainLayerComboBox.currentIndexChanged.disconnect()
+            self.dlg.idComboBox.currentIndexChanged.disconnect()
+            self.dlg.projectionComboBox.currentIndexChanged.disconnect()
+            self.dlg.simplificationSlider.valueChanged.disconnect()
+            self.dlg.outputEdit.textChanged.disconnect()
+            self.dlg.outputButton.clicked.disconnect()
+            self.dlg.panZoomCheckBox.stateChanged.disconnect()
+            self.dlg.legendCheckBox.stateChanged.disconnect()
+            self.dlg.legendPositionComboBox.currentIndexChanged.disconnect()
+            # extras tab        
+            self.dlg.extraVectorCheckBox.stateChanged.disconnect()
+            self.dlg.extraVectorTreeWidget.itemClicked.disconnect()
+            # popup tab
+            self.dlg.incPopupCheckBox.stateChanged.disconnect()
+            self.dlg.popupPositionComboBox.currentIndexChanged.disconnect()
+            self.dlg.popupTreeWidget.itemClicked.disconnect()
+            # viz tab
+            self.dlg.incVizCheckBox.stateChanged.disconnect()
+            self.dlg.vizTypeComboBox.currentIndexChanged.disconnect()
+            self.dlg.vizWidthEdit.textChanged.disconnect()
+            self.dlg.vizHeightEdit.textChanged.disconnect()
+            self.dlg.vizTreeWidget.itemClicked.disconnect()
+            self.dlg.addRangeButton.clicked.disconnect()
+            self.dlg.delRangeButton.clicked.disconnect()
+            self.dlg.vizLabelsLineEdit.textChanged.disconnect()
+            # buttons
+            self.dlg.buttonBox.button(QDialogButtonBox.Cancel).clicked.disconnect()
+            self.dlg.buttonBox.button(QDialogButtonBox.Ok).clicked.disconnect()
+        except TypeError:
+            pass
         
         self.resetFields()
         
