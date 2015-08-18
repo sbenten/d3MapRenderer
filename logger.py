@@ -17,7 +17,7 @@ class log:
         """Log a message at the info level"""
         QgsMessageLog.logMessage(self.className + " " + message, self.tag, QgsMessageLog.INFO) 
        
-    def error(self):
+    def error2(self):
         """Log a message at the error level""" 
         e_type, e_value, e_traceback = sys.exc_info()
         lines = traceback.format_exception(e_type, e_value, e_traceback)

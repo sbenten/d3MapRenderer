@@ -26,14 +26,14 @@ npm install -g topojson
 This command downloads the topojson package and registers it for use on the command line.
 
 
-d3 relies heavily on [JSON](https://en.wikipedia.org/wiki/JSON) files for loading data, and topojson is no different. To see the results of an export via this plugin you will also need a web server, as restrictions in modern web browsers prevent json files being loaded from the local file system. 
+d3 relies heavily on [JSON](https://en.wikipedia.org/wiki/JSON) files for loading data, and topojson is no different. To see the results of an export via this plugin you will also need a web server, as restrictions in modern web browsers prevent json files being loaded from the local file system. So if you want to view the results of the export before uploading to a website in the cloud (recomended), you will need a web server.
 
 
-If you haven’t already got a web server installed use [http-server] (https://www.npmjs.com/package/http-server) for Node.js. Install it by returning to that command prompt and typing:
+If you haven’t already got a web server already installed use [http-server] (https://www.npmjs.com/package/http-server) for Node.js. Install it by returning to that command line and typing:
 ```
 npm install -g http-server
 ```
-Use http-server with the command line, and it is as simple as changing to the directory where you are going to output your d3 maps, and starting the server. For example, on Windows this would be the following two commands (obviously using your own directory path):
+http-server is started and stopped the command line, and it is as simple as changing to the directory where you are going to output your d3 maps (this will be the root of the local web site), and starting the server. For example, on Windows this would be the following two commands (obviously using your own directory path):
 ```
 cd c:\Users\Simon\Documents
 http-server
@@ -133,7 +133,7 @@ Living Environment:LENVRK2004 , LENVRK2007 , LENVRK2010
 2015-08-12T15:00:51 0 model SINGLE: FILL SYMBOL (1 layers) color 217,217,217,255
 2015-08-12T15:00:51 0 model setSingleSymbol
 2015-08-12T15:00:51 0 model Filter: 
-2015-08-12T15:00:52 0 winHelper C:\Program Files\nodejs\node.exe C:\Users\Simon\AppData\Roaming\npm\node_modules\topojson\bin\topojson -o D:\Downloads\Temp\EnglishIMD\topo\UKIREPOLY.json --id-property LSOA01CD -p d3Css -s 1e-9 -- l0=D:\Downloads\Temp\EnglishIMD\shp\UK_IRE_POLY.shp
+2015-08-12T15:00:52 0 winHelper C:\Program Files\nodejs\node.exe C:\Users\Simon\AppData\Roaming\npm\node_modules\topojson\bin\topojson -o C:\Users\Simon\Documents\EnglishIMD\topo\UKIREPOLY.json --id-property LSOA01CD -p d3Css -s 1e-9 -- l0=C:\Users\Simon\Documents\EnglishIMD\shp\UK_IRE_POLY.shp
 2015-08-12T15:00:56 0 winHelper topojson result 
 bounds: -10.625570682933017 49.168431613190194 1.7610498126253136 60.86076643797765 (spherical)
 pre-quantization: 1.38m (0.0000124Â°) 1.30m (0.0000117Â°)
@@ -164,7 +164,7 @@ prune: retained 868 / 3394 arcs (26%)
 2015-08-12T15:01:05 0 model Filter: "OVRK2010" >= 22737.7 and "OVRK2010" <= 25985.8
 2015-08-12T15:01:06 0 model Filter: "OVRK2010" >= 25985.8 and "OVRK2010" <= 29233.9
 2015-08-12T15:01:07 0 model Filter: "OVRK2010" >= 29233.9 and "OVRK2010" <= 32482.0
-2015-08-12T15:01:10 0 winHelper C:\Program Files\nodejs\node.exe C:\Users\Simon\AppData\Roaming\npm\node_modules\topojson\bin\topojson -o D:\Downloads\Temp\EnglishIMD\topo\LSOA2001IMD.json --id-property LSOA01CD -p d3Css -s 1e-9 -- l1=D:\Downloads\Temp\EnglishIMD\shp\LSOA_2001_IMD.shp
+2015-08-12T15:01:10 0 winHelper C:\Program Files\nodejs\node.exe C:\Users\Simon\AppData\Roaming\npm\node_modules\topojson\bin\topojson -o C:\Users\Simon\Documents\EnglishIMD\topo\LSOA2001IMD.json --id-property LSOA01CD -p d3Css -s 1e-9 -- l1=C:\Users\Simon\Documents\EnglishIMD\shp\LSOA_2001_IMD.shp
 2015-08-12T15:01:17 0 winHelper topojson result 
 bounds: -6.3649789650534805 49.886367784112075 1.762763270374323 55.81105303680311 (spherical)
 pre-quantization: 0.904m (0.00000813Â°) 0.659m (0.00000593Â°)

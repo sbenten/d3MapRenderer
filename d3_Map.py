@@ -604,7 +604,7 @@ class d3MapRenderer:
         else:
             QMessageBox.critical(self.iface.mainWindow(), 
                                  "Failed pre-requisite check", 
-                                 "This plugin requires an installation of node.js and the topojson package.\r\nPlease ensure node.js is installed and then run:\r\n'npm install -g topojson'\r\nSee the installing tools section of 'Let's make a map'\r\n(http://bost.ocks.org/mike/map/)", 
+                                 "This plugin requires an installation of node.js and the topojson package.\r\nPlease ensure node.js is installed and then run:\r\n'npm install -g topojson'\r\nSee the pre-requisites section at https://github.com/sbenten/d3MapRenderer", 
                                  QMessageBox.Ok)
             # No need to itdy up the UI, it hasn't been created yet
             # Just close the dialog...
