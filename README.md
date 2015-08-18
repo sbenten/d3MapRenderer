@@ -33,7 +33,7 @@ If you haven’t already got a web server already installed use [http-server] (h
 ```
 npm install -g http-server
 ```
-http-server is started and stopped the command line, and it is as simple as changing to the directory where you are going to output your d3 maps (this will be the root of the local web site), and starting the server. For example, on Windows this would be the following two commands (obviously using your own directory path):
+http-server is started and stopped via the command line, and it is as simple as changing to the directory where you are going to output your d3 maps (this will be the root of the local web site), and starting the server. For example, on Windows this would be the following two commands (obviously using your own directory path):
 ```
 cd c:\Users\Simon\Documents
 http-server

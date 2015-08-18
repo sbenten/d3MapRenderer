@@ -24,7 +24,7 @@ changelog=Initial version allowing the export of polygons, polylines and point v
 # Tags are comma separated with spaces allowed
 tags=attribute, csv, export, geojson, topojson, html, legend, point, polygon, polyline, shapefile, web, web map, d3
 
-homepage=https://github.com/sbenten/d3MapRenderer
+homepage=http://maprenderer.org/d3/
 tracker=https://github.com/sbenten/d3MapRenderer/issues
 repository=https://github.com/sbenten/d3MapRenderer
 category=Web
