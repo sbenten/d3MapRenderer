@@ -43,7 +43,7 @@ That wasn’t so bad was it?
 
 ## Installation
 
-Soon to be uploaded to the QGIS plugin repository as an experimental plugin.
+Download from the QGIS plugin repository. Currently flagged as an experimental plugin.
 
 
 If you want to try the bleeding edge version, [download the zip](https://github.com/sbenten/d3MapRenderer/archive/master.zip) direct from GitHub, and extract the contents into your QGIS python plugins directory (which on Windows is something along the lines of C:\Users\Simon\\.qgis2\python\plugins\). Rename the folder from d3MapRenderer-master to just d3MapRenderer and you will find the plugin listed along side the others in the QGIS plugin repository.   

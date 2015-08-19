@@ -22,9 +22,7 @@
 """
 #TODO: Point size
 #TODO: Labels
-#TODO: Viz
 #TODO: Conic projections do not render with entire world
-#TODO: Open directory instead of WebBrowser?
 #TODO: Orthographic projections
 #TODO: After adding orthographic projections, consider grouping of conic, world and orthographic
 
@@ -604,7 +602,7 @@ class d3MapRenderer:
         else:
             QMessageBox.critical(self.iface.mainWindow(), 
                                  "Failed pre-requisite check", 
-                                 "This plugin requires an installation of node.js and the topojson package.\r\nPlease ensure node.js is installed and then run:\r\n'npm install -g topojson'\r\nSee the pre-requisites section at https://github.com/sbenten/d3MapRenderer", 
+                                 "This plugin requires an installation of node.js and the topojson package.\r\nPlease ensure node.js is installed and then run:\r\n'npm install -g topojson'\r\nSee the pre-requisites section at http://maprenderer.org/d3/", 
                                  QMessageBox.Ok)
             # No need to itdy up the UI, it hasn't been created yet
             # Just close the dialog...
