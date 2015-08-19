@@ -95,18 +95,7 @@ class albersUsa(projection):
         """Get the d3 JavaScript code required for the projection"""
         script = "{n}()\n      .scale(1000)\n      .translate([width / 2, height / 2])"
         
-        return script.format(n = self.__d3Name)
-    
-class conicConformal(projection):
-    """Conic Equal Area projection"""
-    
-    def __init__(self):
-        self.name = "Conic Conformal"
-        self.__d3Name = "d3.geo.conicConformal"
-        
-    def toScript(self, bound, width, height):
-        """Get the d3 JavaScript code required for the projection"""
-        return self.formatConicScript(self.__d3Name, bound, width, height)  
+        return script.format(n = self.__d3Name) 
 
 class conicEquidistant(projection):
     """Conic Equi-distant Projection"""
@@ -260,12 +249,23 @@ class hill(projection):
     
     def __init__(self):
         """Constructor"""
-        self.name = "Hill"
+        self.name = "Hill Eucyclic"
         self.__d3Name = "d3.geo.hill"
         
     def toScript(self, bound, width, height):
         """Get the d3 JavaScript code required for the projection"""
         return self.formatScript(self.__d3Name, bound, width, height) 
+    
+class conicConformal(projection):
+    """Lambert Conic Conformal"""
+    
+    def __init__(self):
+        self.name = "Lambert Conic Conformal"
+        self.__d3Name = "d3.geo.conicConformal"
+        
+    def toScript(self, bound, width, height):
+        """Get the d3 JavaScript code required for the projection"""
+        return self.formatConicScript(self.__d3Name, bound, width, height) 
         
 class mercator(projection):
     """Mercator projection"""

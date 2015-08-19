@@ -43,32 +43,10 @@ That wasn’t so bad was it?
 
 ## Installation
 
-
 Soon to be uploaded to the QGIS plugin repository as an experimental plugin.
 
 
 If you want to try the bleeding edge version, [download the zip](https://github.com/sbenten/d3MapRenderer/archive/master.zip) direct from GitHub, and extract the contents into your QGIS python plugins directory (which on Windows is something along the lines of C:\Users\Simon\\.qgis2\python\plugins\). Rename the folder from d3MapRenderer-master to just d3MapRenderer and you will find the plugin listed along side the others in the QGIS plugin repository.   
-
-
-## Using the plugin
-
-
-Once installed, open a QGIS project and click the D3 button in the toolbar.
-
-
-The plugin uses a tabbed interface to split the d3 map rendering options into groups.
-
-
-The Main tab is where the mandatory options are specified: the map title, width and height of the map, the main layer, id field, d3 projection and directory to output the map and associated files.
-
-
-The Extra tab allows further layers to be added to the map. All layers are output in the legend order displayed in QGIS, maintaining background and foreground layer order.
-
-
-The Popup tab allows the creation of an information popup from attributes within the main layer.
-
-
-The Viz tab allows for c3.js charts to be created from numeric attributes within the main layer.
 
 
 ## Logging issues and feature requests
