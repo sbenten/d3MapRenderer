@@ -27,7 +27,7 @@
 #TODO: After adding orthographic projections, consider grouping of conic, world and orthographic
 
 # Initialize Qt resources from file resources.py
-import os.path
+import os
 import tempfile
 import resources_rc
 import traceback
@@ -385,13 +385,17 @@ class d3MapRenderer:
     def validateOutput(self):
         """Perform validation on the output directory"""
         result  = True
-        outDir = str(self.dlg.outputEdit.text())
-        if len(outDir) == 0:
+        if len(self.dlg.outputEdit.text()) == 0:
             result = False
+        else:
+            if os.path.exists(self.dlg.outputEdit.text()) == False:
+                result = False
+
+        if result == True:
+            self.dlg.outputEdit.setStyleSheet('QLineEdit { background-color: #ffffff }')
+        else:
             self.dlg.outputEdit.setStyleSheet('QLineEdit { background-color: #f6989d }')
             self.dlg.outputEdit.setFocus()
-        else:
-            self.dlg.outputEdit.setStyleSheet('QLineEdit { background-color: #ffffff }')
             
         return result
             
@@ -403,8 +407,7 @@ class d3MapRenderer:
     def validateTitle(self):
         """Perform validation on the title"""
         result = True
-        title = str(self.dlg.titleEdit.text())
-        if len(title) == 0:
+        if len(self.dlg.titleEdit.text()) == 0: 
             result = False
             self.dlg.titleEdit.setStyleSheet('QLineEdit { background-color: #f6989d }')
             self.dlg.titleEdit.setFocus()
@@ -552,7 +555,7 @@ class d3MapRenderer:
         if len(folder) == 0:
             # no previous folder specified, set to the os temporary directory
             folder =  tempfile.gettempdir()   
-        folder = str(QFileDialog.getExistingDirectory(self.dlg, "Select Output Directory", folder, QFileDialog.ShowDirsOnly))
+        folder = QFileDialog.getExistingDirectory(self.dlg, "Select Output Directory", folder, QFileDialog.ShowDirsOnly)
         if len(folder) > 0:
             self.dlg.outputEdit.setText(folder)
     

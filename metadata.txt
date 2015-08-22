@@ -10,8 +10,8 @@
 name=d3 Map Renderer
 qgisMinimumVersion=2.0
 description=Export vector layers to a d3.js map, with optional popup information, charts and legend
-about=A python QGIS plugin to export polygons, polylines and point vector layers from shapefiles to topojson for display within a web page using the d3.js JavaScript library, with additional options of popup information based on d3-tip, charts from c3.js and a legend. The aim of the plugin is not to replicate all of the mapping functionality available within d3, nor is it to provide every type of chart or data visualisation. The plugin aims to provide you with the a solid starting point to start hacking the JavaScript code. For instance, you may want to use a different charting library, remove the y or x axis from the current chart, use a different projection, alter the map size or color scheme. The log messages panel in QGIS will contain the topojson command used to convert the shapefile to topojson, and can be used as a template to hand craft your own conversions.
-version=0.7
+about=A python QGIS plugin to export polygons, polylines and point vector layers from shapefiles to topojson for display within a web page using the d3.js JavaScript library, with additional options of popup information based on d3-tip, charts from c3.js and a legend. The aim of the plugin is not to replicate all of the mapping functionality available within d3, nor is it to provide every type of chart or data visualisation. The plugin aims to provide you with the a solid starting point to start hacking the JavaScript code. For instance, you may want to use a different charting library, remove the y or x axis from the current chart, use a different projection, alter the map size or color scheme. The log messages panel in QGIS will contain the topojson command used to convert the shapefile to topojson, and can be used as a template to hand craft your own conversions. NOTE: Pre-requisite of Node.js and the topojson package.
+version=0.8
 author=Simon Benten
 email=swbenten@gmail.com
 
@@ -20,7 +20,7 @@ email=swbenten@gmail.com
 # Recommended items:
 
 # Uncomment the following line and add your changelog:
-changelog=Initial version allowing the export of polygons, polylines and point vector layers to topojson. Includes support for many different d3 projections. Coming soon... Better point support. Labels. Orthographic projections.
+changelog=Better unicode support. Windows output path limited to ascii due to problems with subprocess encoding on windows. 
 
 # Tags are comma separated with spaces allowed
 tags=attribute, csv, export, geojson, topojson, html, legend, point, polygon, polyline, shapefile, web, web map, d3

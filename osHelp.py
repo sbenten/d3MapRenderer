@@ -1,5 +1,8 @@
+import sys
 import os
 import platform
+import locale
+import codecs
 
 from subprocess import *
 
@@ -202,7 +205,7 @@ class winHelper(helper):
                 args.append(shapefile)
             
             self.__logger.info(" ".join(args)) 
-            
+                 
             result = check_output(args, stderr=STDOUT, shell=True)
             
             self.__logger.info("topojson result \r\n" + result)  

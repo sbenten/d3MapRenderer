@@ -24,18 +24,6 @@ from viz import *
 class model:
     """Model for the UI"""
     
-    '''
-    if sys.platform == 'darwin':
-        def openFolder(path):
-            subprocess.check_call(['open', '--', path])
-    elif sys.platform == 'linux2':
-        def openFolder(path):
-            subprocess.check_call(['gnome-open', '--', path])
-    elif sys.platform == 'win32':
-        def openFolder(path):
-            subprocess.check_call(['explorer', path])
-    '''
-    
     def __init__(self, iface):
         """Initialise the model"""
         self.__logger = log(self.__class__.__name__)
@@ -46,13 +34,13 @@ class model:
         self.__ranges = dataRanges()       
         
         self.iface = iface
-        self.title = ""
+        self.title = u""
         self.showHeader = False
         self.width = 800
         self.height = 600
         self.idField = ""
         self.simplification = ""
-        self.outputFolder = ""
+        self.outputFolder = u""
         self.vectors = []   
         self.projections = [] 
         self.selectedProjection = None  
@@ -258,13 +246,7 @@ class model:
     
     def getUniqueFolderName(self):  
         """Get a unique folder name"""
-        stub = self.getSafeString(self.title[:20])        
-        dest = self.getDestFolder(stub)
-        
-        if os.path.isdir(dest):
-            stub = stub + "_" + time.strftime("%Y%m%d%H%M%S") 
-            
-        return stub 
+        return time.strftime("%Y%m%d%H%M%S")          
     
     def setSymbology(self, renderer, layer, index):
         """Read the symbology, generate a CSS style and set against each row in the layers attribute table"""
@@ -397,7 +379,7 @@ class model:
         features = main.layer.getFeatures()
             
         n = self.getDestDataFile(uid)
-        f = open(n, "a")
+        f = codecs.open(n, "a", "utf-8")
         try:
             if self.hasViz == True:
                 # Merge the range data with any selected fields
@@ -411,17 +393,17 @@ class model:
             if self.idField not in self.__selectedFields:
                 self.__selectedFields.append(self.idField)
             
-            f.write(",".join(self.__selectedFields))
+            f.write(u",".join(self.__selectedFields))
             f.write("\n")  
               
             # Loop though each feature and read the values
             for feature in features:
-                line = ""
+                line = u""
                 for field in self.__selectedFields:
                     idField = (field == self.idField)
                     line += self.safeCsvString(feature[field], idField) + ","
-                f.write(line[:-1])
-                f.write("\n")
+                f.write(unicode(line[:-1]))
+                f.write(u"\n")
             
         except Exception as e:
             self.__logger.error("Exception\r\n" + traceback.format_exc(None))
@@ -432,12 +414,17 @@ class model:
     def writeLegendFile(self, uid, syms):
         """Write the legend for the main layer"""
         n = self.getDestLegendFile(uid)
-        f = open(n, "a")
+        f = codecs.open(n, "a", "utf-8")
+        #for  now a fixed width and height for the legend
+        template = u"20,20,{0},{1}\n"
         try:
             if syms is not None:
                 f.write("Width,Height,Color,Text\n");
                 for sym in syms:
-                    f.write("20,20," + sym.css + "," + self.safeCsvString(sym.label, False) + "\n");
+                    uCss = unicode(sym.css)
+                    uText = self.safeCsvUnicode(sym.label, False)
+                    
+                    f.write(template.format(uCss, uText));
                     
         except Exception as e:
             # don't leave open files 
@@ -447,14 +434,10 @@ class model:
             f.close()
     
     def safeCsvString(self, obj, idField):
-        """Make a string safe for use in a CSV file"""
-        val = ""
-        try:
+        """Make a string safe from commas and NULLS"""
+        val = obj
+        if isinstance(obj, unicode) == False:
             val = str(obj)
-        except UnicodeEncodeError as e:
-            self.__logger.error(e.reason + " " + e.object[e.start:e.end])
-            # dodgy characters, ignore them and encode with unicode
-            val = obj.encode('ascii', 'ignore')
             
         if val == "NULL":
             val = ""
@@ -464,6 +447,18 @@ class model:
                 val = val[:len(val)-2]        
             
         return val.replace(",","")
+        
+    def safeCsvUnicode(self, obj, idField):
+        """Make a string safe for use in a CSV file
+        
+        returns unicode formatted string"""
+        
+        val = obj
+        if isinstance(obj, unicode) == False:
+            val = unicode(obj, "utf-8")            
+        
+        return self.safeCsvString(val, idField)
+        
             
     def createFolders(self, uid):
         """Create the folder structure and copy code files"""
@@ -502,13 +497,21 @@ class model:
                     os.remove(filePath)
         zipf.close()
             
+    def isWindows(self):
+        """Windows OS?"""
+        return self.topojson.isWindows        
+            
     def getSourceFolder(self):
         """Get the plugin html source"""
         return os.path.join(os.path.dirname(os.path.realpath(__file__)), "html")
     
     def getDestFolder(self, uid):
         """Get the destination folder with the unique id appended"""
-        return os.path.join(self.outputFolder, uid)
+        safeFolder = self.outputFolder
+        if self.isWindows() == True:
+            safeFolder = self.outputFolder.encode('ascii', 'ignore')
+
+        return os.path.join(safeFolder, uid)
        
     def getUniqueFilePath(self, fullPath):
         """Get a unique full path to a file"""
@@ -535,27 +538,33 @@ class model:
     
     def getDestShpFolder(self, uid):
         """Get the destination shapefile folder path"""
-        return os.path.join(self.outputFolder, uid, "shp")
+        folder = self.getDestFolder(uid)
+        return os.path.join(folder, "shp")
     
     def getDestIndexFile(self, uid):
         """Get the destination index file path"""
-        return os.path.join(self.outputFolder, uid, "index.html")
+        folder = self.getDestFolder(uid)
+        return os.path.join(folder, "index.html")
     
     def getDestCssFile(self, uid):
         """Get the destination CSS file path"""
-        return os.path.join(self.outputFolder, uid, "css", self.__cssFile)
+        folder = self.getDestFolder(uid)
+        return os.path.join(folder, "css", self.__cssFile)
     
     def getDestDataFile(self, uid):
         """Get the destination info file path"""
-        return os.path.join(self.outputFolder, uid, "data/info.csv")
+        folder = self.getDestFolder(uid)
+        return os.path.join(folder, "data/info.csv")
     
     def getDestLegendFile(self, uid):
         """Get the destination legend file path"""
-        return os.path.join(self.outputFolder, uid, "data/legend.csv")
+        folder = self.getDestFolder(uid)
+        return os.path.join(folder, "data/legend.csv")
     
     def getDestTopoFolder(self, uid):
         """Get the destination shapefile folder"""
-        return os.path.join(self.outputFolder, uid, "topo")
+        folder = self.getDestFolder(uid)
+        return os.path.join(folder, "topo")
     
     def addColorColumn(self, layer):
         """Add a new column to hold the color used in symbology"""
@@ -598,7 +607,7 @@ class model:
                                                         
     def getSafeString(self, val):
         """Return a string condsidered safe for use in file names"""
-        pattern = re.compile('[\W_]+')
+        pattern = re.compile('[\W_]+', re.UNICODE)
         return pattern.sub("", val)                                                
         
     def getLayerObjectName(self, index):
@@ -624,7 +633,7 @@ class model:
     
     def logExportParams(self, main):
         """Log the parameters to the log messages panel"""
-        template = "       {0} = [{1}]"
+        template = u"       {0} = [{1}]"
         
         self.__logger.info(template.format("Title", self.title))
         self.__logger.info(template.format("Header", str(self.showHeader)))
@@ -788,6 +797,7 @@ class model:
         self.__logger.info(proj)
         
         # Can't use string format as it has a fit over css and javascript braces {}
+        outHtml = u""
         outHtml = html.replace("<%title%>", self.title)
         outHtml = outHtml.replace("<%header%>", outVars.createHeader(self.title))
         outHtml = outHtml.replace("<%tooltiptemplate%>", self.getPopupTemplate())
