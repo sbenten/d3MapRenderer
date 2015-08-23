@@ -30,7 +30,7 @@
     <string/>
    </property>
    <property name="currentIndex">
-    <number>2</number>
+    <number>0</number>
    </property>
    <widget class="QWidget" name="map">
     <attribute name="title">
@@ -97,7 +97,7 @@
       </rect>
      </property>
      <property name="toolTip">
-      <string>The directory to output the files required for the d3 visualisation.</string>
+      <string>An existing directory to output the files required for the d3 visualisation. On Windows, limited to ascii characters only.</string>
      </property>
      <property name="text">
       <string/>

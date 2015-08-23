@@ -390,6 +390,14 @@ class d3MapRenderer:
         else:
             if os.path.exists(self.dlg.outputEdit.text()) == False:
                 result = False
+                
+        if self.model.isWindows() == True:
+            # Restriction on windows command call to ASCII only characters
+            # Prevent input of Unicode characters here
+            try:
+                self.dlg.outputEdit.text().decode('ascii')
+            except UnicodeEncodeError: 
+                result = False
 
         if result == True:
             self.dlg.outputEdit.setStyleSheet('QLineEdit { background-color: #ffffff }')
