@@ -41,7 +41,7 @@ class outputVars:
         
     def createHeader(self, title):
         """Creating the optional heading element"""
-        template = "<h1>{0}</h1>"
+        template = u"<h1>{0}</h1>"
         
         if self.hasHeader == True:
             return template.format(title)
@@ -101,7 +101,7 @@ class outputVars:
         value = ""
         
         if self.vizInUse() == True:            
-            value = self.chartType.getJavaScript(self.mainLayer, self.vizRanges, self.vizLabels, vizWidth, vizHeight)
+            value = self.chartType.getJavaScript(self.mainLayer, self.vizRanges, self.vizLabels, vizWidth, vizHeight, self.extTip)
 
         return value
         

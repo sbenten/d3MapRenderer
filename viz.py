@@ -21,8 +21,8 @@ class chart(object):
         # We want a string in the format
         # groups: [['data1', 'data2']]
         
-        delimit = """ "data{0}" """
-        template = "groups: [[{0}]],"        
+        delimit = u""" "data{0}" """
+        template = u"groups: [[{0}]],"        
         temp = []
         
         if self.stacked == True:  
@@ -32,10 +32,10 @@ class chart(object):
                 
                 i += 1
             
-            return template.format(",".join(temp))
+            return template.format(u",".join(temp))
         
         else:
-            return "" 
+            return u"" 
         
     def getMinMaxRange(self, main, ranges):
         """Compare the min and max values for all attributes to retrieve the full range of data values
@@ -67,7 +67,7 @@ class chart(object):
             
         return rmin, rmax      
     
-    def getJavaScript(self, main, ranges, labels, width, height):
+    def getJavaScript(self, main, ranges, labels, width, height, ext):
         """Create the chart javascript"""
         
         value = ""
@@ -112,8 +112,8 @@ class chart(object):
         }
         '''
             
-        template = """    function chart(obj){{
-      var par = d3.select(".d3-tip #chart")
+        template = u"""    function chart(obj){{
+      var par = d3.select("{par}")
       {labels}
       {vars}
     
@@ -141,37 +141,42 @@ class chart(object):
       }});
     }}"""
     
+        parentTemplate = u".d3-tip #chart"
+        if ext == True:
+            parentTemplate = "#extTip #chart"
+        
+        
         min, max = self.getMinMaxRange(main, ranges)
         
         # var labels = ["x", 2004, 2007, 2010];
-        labelPart = """var labels = ["x", {0}];"""
-        labelTemplate = labelPart.format(",".join(labels))
-        labelVarTemplate = "labels,"
+        labelPart = u"""var labels = ["x", {0}];"""
+        labelTemplate = labelPart.format(u",".join(labels))
+        labelVarTemplate = u"labels,"
         
         # var data1 = ["data1", obj["OVRK2004"], obj["OVRK2007"], obj["OVRK2010"]];
-        varPart = """var data{0} = ["data{0}", {1}];"""
-        fieldPart = """obj["{0}"]"""
-        varTemplate = ""
+        varPart = u"""var data{0} = ["data{0}", {1}];"""
+        fieldPart = u"""obj["{0}"]"""
+        varTemplate = u""
         varList = []
         # Need to check the length of all the labels
         # x: "x",
-        xaxisTemplate = """x: "x","""
+        xaxisTemplate = u"""x: "x","""
         for l in labels:
             if len(l) == 0:
                 # not all labels specified, so don't need this
-                xaxisTemplate = ""
-                labelTemplate = ""
-                labelVarTemplate = ""
+                xaxisTemplate = u""
+                labelTemplate = u""
+                labelVarTemplate = u""
             break
             
         # data1, data2, ...
-        dataPart = """data{0}"""
-        dataTemplate = ""
+        dataPart = u"""data{0}"""
+        dataTemplate = u""
         dataList = []
         
         # data1: "Overall", data2: "Income", ...
-        namesPart = """data{0}: "{1}" """
-        namesTemplate = ""        
+        namesPart = u"""data{0}: "{1}" """
+        namesTemplate = u""        
         nameList = []
         
         i = 1
@@ -188,6 +193,7 @@ class chart(object):
         
         
         value = template.format(
+            par = parentTemplate,
             labels = labelTemplate,
             vars = varTemplate,
             xaxis = xaxisTemplate,
@@ -424,11 +430,11 @@ class dataRange:
     
     def __init__(self, name):
         """Create a new data range helper object"""
-        self.__name = name
+        self.__name = unicode(name)
         self.__formattedList = []
         self.__fieldList = []
         
-        temp = ""
+        temp = u""
         if len(name) > 0:
             temp = name + ":"
             temp = temp.ljust(11)            
@@ -455,7 +461,7 @@ class dataRange:
         for f in self.__fieldList:
             temp.append(formatString.format(f))
         
-        return ",".join(temp)
+        return u",".join(temp)
         
     def getLength(self):  
         """Get the the amount of fields in the data range"""   
@@ -470,7 +476,7 @@ class dataRange:
            
         if len(self.__displayPrompt) > 0:
             temp = self.__displayPrompt
-        temp += ', '.join(self.__formattedList)
+        temp += u', '.join(self.__formattedList)
         
         return temp
         
