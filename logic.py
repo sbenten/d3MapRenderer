@@ -12,7 +12,7 @@ import zipfile
 
 from qgis.core import *
 from qgis.gui import *
-from qgis.utils import iface
+from qgis.utils import *
 from logger import log
 from osHelp import topo
 from symbology import *
@@ -32,6 +32,9 @@ class model:
         self.__selectedFields = []  
         self.__tempVizFields = [] 
         self.__ranges = dataRanges()       
+        
+        self.__logger.info(QGis.QGIS_VERSION)
+        self.__logger.info(sys.version)
         
         self.iface = iface
         self.title = u""
@@ -91,7 +94,16 @@ class model:
          
     def hasTopoJson(self):    
         """Does the system have node.js and topojson installed?""" 
-        return self.topojson.helper.hasTopojson()
+        found = False
+        
+        try:   
+            found = self.topojson.helper.hasTopojson()
+           
+        except Exception as e:
+            # What? log and let the UI close
+            self.__logger.error("Exception\r\n" + traceback.format_exc(None))
+
+        return found
          
     def setup(self): 
         """Get the vector layers from QGIS and perform other startup actions"""
