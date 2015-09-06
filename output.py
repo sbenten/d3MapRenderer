@@ -51,7 +51,7 @@ class outputVars:
     def createSvgPaths(self):
         """Create the Svg group and path elements required by the layers"""
         paths = []
-        template = "    var vectors{index} = vectors.append(\"g\");\n    var vector{index} = vectors{index}.append(\"path\");\n"
+        template = "    var vectors{index} = vectors.append(\"g\");\n    var vector{index} = void 0;\n"
         i = 0
         for o in self.outputLayers:
             path = template.format(
