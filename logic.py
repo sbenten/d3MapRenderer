@@ -805,7 +805,7 @@ class model:
         html = f.read()
         f.close()
             
-        proj = self.selectedProjection.toScript(outVars.bboxes.getMaxBound(), self.width, self.height)
+        proj = self.selectedProjection.toScript(outVars.bboxes.getMainBound(), self.width, self.height)
         self.__logger.info(proj)
         
         # Can't use string format as it has a fit over css and javascript braces {}
@@ -868,7 +868,7 @@ class model:
         
         matches = result.split()
         
-        return objName, name, bound(float(matches[1]), float(matches[2]), float(matches[3]), float(matches[4]))
+        return objName, name, bound(layer.main, float(matches[1]), float(matches[2]), float(matches[3]), float(matches[4]))
         
     
 class vector:

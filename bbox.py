@@ -9,6 +9,13 @@ class bounds(list):
         """Constructor. Nothing special here"""
         self.__logger = log(self.__class__.__name__) 
         
+    def getMainBound(self):
+        """Retrieve the bounding box for the main layer"""
+        for b in self:
+            if b.isMain == True:
+               return b  
+                     
+        return None       
                
     def getMaxBound(self):
         """Retrieve the maximum bounding box from each item in this list
@@ -41,13 +48,16 @@ class bounds(list):
                
         self.__logger.info("Max bounds: " + str(origLeft) + " " + str(origBottom) + " " + str(origRight) + " " + str(origTop))       
         
-        return bound(origLeft, origBottom, origRight, origTop)
+        return bound(False, origLeft, origBottom, origRight, origTop)
     
 class bound:
     """Bounding box of a layer"""
     
-    def __init__(self, left, bottom, right, top):
+    def __init__(self, isMain, left, bottom, right, top):
         """Bounds constructor
+        :param isMain: Main layer
+        :type isMain: boolean
+        
         :param left: Minimum Longitude.
         :type left: float
 
@@ -60,6 +70,7 @@ class bound:
         :param top: Maximum Latitude.
         :type top: float
         """
+        self.isMain = isMain
         self.left = left
         self.bottom = bottom
         self.right = right
