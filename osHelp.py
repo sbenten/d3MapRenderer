@@ -39,11 +39,17 @@ class helper:
         :rtype: bool  
         """
         success = False
-
-        result = check_output(["which", "topojson"])
         
-        if len(result) > 0:
-            success = True            
+        try:
+            result = check_output(["which", "topojson"])
+            
+            self.__logger.info("which result " + result) 
+            
+            success = True             
+        
+        except CalledProcessError:
+            
+            self.__logger.error2()           
             
         return success
     
