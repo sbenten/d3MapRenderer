@@ -291,8 +291,9 @@ class categorizedSymbol(singleSymbol):
         self.color = range.symbol().color().name()
         self.colorTrans = range.symbol().color().alpha()
         self.symbolTrans = range.symbol().alpha()
+        self.brushStyle = 1
         
-        self.outlineWidth, self.outlineColor, self.outlineStyle, self.outlineTrans = self.getOutlineDetails(range.symbol())
+        self.outlineWidth, self.outlineColor, self.outlineStyle, self.outlineTrans, self.brushStyle = self.getOutlineDetails(range.symbol())
         
     def getFilterExpression(self):
         """Get the filter expression for selecting features based on their attribute"""
@@ -353,8 +354,9 @@ class graduatedSymbol(singleSymbol):
         self.color = range.symbol().color().name()
         self.colorTrans = range.symbol().color().alpha()
         self.symbolTrans = range.symbol().alpha()
+        self.brushStyle = 1
         
-        self.outlineWidth, self.outlineColor, self.outlineStyle, self.outlineTrans = self.getOutlineDetails(range.symbol())
+        self.outlineWidth, self.outlineColor, self.outlineStyle, self.outlineTrans, self.brushStyle = self.getOutlineDetails(range.symbol())
                     
     def getFilterExpression(self):
         """Get the filter expression for selecting features based on their attribute"""

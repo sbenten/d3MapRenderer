@@ -260,13 +260,11 @@ class model:
         """Get a unique folder name"""
         return time.strftime("%Y%m%d%H%M%S")          
     
-    def setSymbology(self, renderer, layer, index):
+    def setSymbology(self, renderer, layer, transparency, index):
         """Read the symbology, generate a CSS style and set against each row in the layers attribute table"""
         
         dump = renderer.dump()        
         self.__logger.info(dump)
-        
-        transparency = 1 - (float(layer.layerTransparency()) / 100)
         
         if dump[0:6] == "SINGLE":
             return self.setSingleSymbol(layer, renderer, transparency, index)            
@@ -730,7 +728,7 @@ class model:
                 progress.setValue(tick)
                 
                 # Read colors
-                syms = self.setSymbology(renderer, destLayer, i)
+                syms = self.setSymbology(renderer, destLayer, vect.transparency, i)
                 tick+=1
                 progress.setValue(tick)
             
@@ -886,6 +884,7 @@ class vector:
         self.vizFields = []
         self.defaultId = ""
         self.isVisible = iface.legendInterface().isLayerVisible(layer) 
+        self.transparency = 1 - (float(layer.layerTransparency()) / 100)
         for f in layer.pendingFields():
             # Add to the list of fields
             self.fields.append(f.name()) 
