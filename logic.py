@@ -792,9 +792,6 @@ class model:
             progress.setValue(tick)
                 
             # start browser
-            # TODO: Create separate settings dialog
-            # TODO: Option of opening file browser
-            # TODO: Option of specifying a web server URL
             webbrowser.open_new_tab("http://127.0.0.1:8080/{0}/index.html".format(uid))
     
     def writeIndexFile(self, uid, outVars):
@@ -868,7 +865,7 @@ class model:
         
         matches = result.split()
         
-        return objName, name, bound(layer.main, float(matches[1]), float(matches[2]), float(matches[3]), float(matches[4]))
+        return objName, name, bound(layer.main, matches[1], matches[2], matches[3], matches[4])
         
     
 class vector:

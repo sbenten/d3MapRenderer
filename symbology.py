@@ -55,8 +55,9 @@ class singleSymbol:
         self.color = sym.color().name()
         self.colorTrans = sym.color().alpha()
         self.symbolTrans = sym.alpha()
+        self.brushStyle = 1
         
-        self.outlineWidth, self.outlineColor, self.outlineStyle, self.outlineTrans = self.getOutlineDetails(sym)
+        self.outlineWidth, self.outlineColor, self.outlineStyle, self.outlineTrans, self.brushStyle = self.getOutlineDetails(sym)
         
         
     def getOutlineDetails(self, sym):
@@ -65,6 +66,7 @@ class singleSymbol:
         outlineColor = ""
         outlineStyle = None
         outlineTrans = 1.0
+        brushStyle = 1
         
         t = type(sym)
         
@@ -82,7 +84,8 @@ class singleSymbol:
             outlineWidth = sym.symbolLayer(0).borderWidth()
             outlineColor = sym.symbolLayer(0).borderColor().name()
             outlineStyle = sym.symbolLayer(0).borderStyle()
-            outlineTrans = sym.symbolLayer(0).borderColor().alpha()            
+            outlineTrans = sym.symbolLayer(0).borderColor().alpha()   
+            brushStyle =  sym.symbolLayer(0).brushStyle()        
         else: 
             # no idea what the symbol is, thrash around trying to guess the attributes            
             if sym.symbolLayer(0) is not None:
@@ -108,7 +111,7 @@ class singleSymbol:
                 outlineStyle = sym.penStyle()
                 outlineTrans = sym.color().alpha()
     
-        return outlineWidth, outlineColor, outlineStyle, outlineTrans
+        return outlineWidth, outlineColor, outlineStyle, outlineTrans, brushStyle
         
     def getFilterExpression(self):
         """Get the filter expression for selecting features based on their attribute"""
@@ -132,13 +135,43 @@ class singleSymbol:
         
     def getOpacity(self):
         """Get the opacity for the range"""
-        colorTrans = float(self.colorTrans)/255
-        return str(self.transparency  * self.symbolTrans * colorTrans)
+        opacity = "0"
+        if self.brushStyle > 0: 
+            '''
+    Might implement this lot later, for now just interested in "No brush"
+Qt::NoBrush    0    No brush pattern.
+Qt::SolidPattern    1    Uniform color.
+Qt::Dense1Pattern    2    Extremely dense brush pattern.
+Qt::Dense2Pattern    3    Very dense brush pattern.
+Qt::Dense3Pattern    4    Somewhat dense brush pattern.
+Qt::Dense4Pattern    5    Half dense brush pattern.
+Qt::Dense5Pattern    6    Somewhat sparse brush pattern.
+Qt::Dense6Pattern    7    Very sparse brush pattern.
+Qt::Dense7Pattern    8    Extremely sparse brush pattern.
+Qt::HorPattern    9    Horizontal lines.
+Qt::VerPattern    10    Vertical lines.
+Qt::CrossPattern    11    Crossing horizontal and vertical lines.
+Qt::BDiagPattern    12    Backward diagonal lines.
+Qt::FDiagPattern    13    Forward diagonal lines.
+Qt::DiagCrossPattern    14    Crossing diagonal lines.
+Qt::LinearGradientPattern    15    Linear gradient (set using a dedicated QBrush constructor).
+Qt::ConicalGradientPattern    17    Conical gradient (set using a dedicated QBrush constructor).
+Qt::RadialGradientPattern    16    Radial gradient (set using a dedicated QBrush constructor).
+Qt::TexturePattern    24    Custom pattern (see QBrush::setTexture())
+            '''
+            colorTrans = float(self.colorTrans)/255
+            opacity = str(self.transparency  * self.symbolTrans * colorTrans)
+        return opacity 
+    
     
     def getOutlineOpacity(self):
         """Get the opacity for the range"""
-        colorTrans = float(self.outlineTrans)/255
-        return str(self.transparency  * self.symbolTrans * colorTrans)
+        opacity = "0"
+        if self.outlineStyle > 0:            
+            colorTrans = float(self.outlineTrans)/255
+            opacity = str(self.transparency  * self.symbolTrans * colorTrans)
+        
+        return opacity
 
     def getPointStyle(self):
         """Get the style for points. Only circles supported at the moment"""
@@ -156,8 +189,8 @@ class singleSymbol:
             w = unicode(self.outlineWidth),
             d = self.getBorderStyle(self.outlineStyle),
             f = unicode(self.color),
-            so = self.getOpacity(),
-            fo = self.getOutlineOpacity()) 
+            fo = self.getOpacity(),
+            so = self.getOutlineOpacity()) 
          
         return output
     
@@ -187,13 +220,24 @@ class singleSymbol:
             w = unicode(self.outlineWidth),
             d = self.getBorderStyle(self.outlineStyle),
             f = unicode(self.color),
-            so = self.getOpacity(),
-            fo = self.getOutlineOpacity())      
+            fo = self.getOpacity(),
+            so = self.getOutlineOpacity())      
         
         return output
     
     def getBorderStyle(self, style):
         """Get the line style applied to the border"""
+        
+        '''
+Qt::NoPen    0    no line at all. For example, QPainter::drawRect() fills but does not draw any boundary line.
+Qt::SolidLine    1    A plain line.
+Qt::DashLine    2    Dashes separated by a few pixels.
+Qt::DotLine    3    Dots separated by a few pixels.
+Qt::DashDotLine    4    Alternate dots and dashes.
+Qt::DashDotDotLine    5    One dash, two dots, one dash, two dots.
+Qt::CustomDashLine    6    A custom pattern defined using QPainterPathStroker::setDashPattern()
+        '''
+        
         dash = ""
         if style > 1:
             if style == 2:

@@ -20,11 +20,6 @@
  *                                                                         *
  ***************************************************************************/
 """
-#TODO: Point size
-#TODO: Labels
-#TODO: Conic projections do not render with entire world
-#TODO: Orthographic projections
-#TODO: After adding orthographic projections, consider grouping of conic, world and orthographic
 
 # Initialize Qt resources from file resources.py
 import os
@@ -212,6 +207,10 @@ class d3MapRenderer:
     def changedProjectionComboBox(self):
         """Sync the selected projection with the model"""
         self.model.selectedProjection = self.dlg.projectionComboBox.itemData(self.dlg.projectionComboBox.currentIndex())
+        
+        #update preview
+        self.dlg.projPreview.setPixmap( QPixmap(os.path.join(os.path.dirname(__file__), "img", self.model.selectedProjection.preview)).scaledToWidth(112) )
+
         
     def changedSimplificationSlider(self):
         """Sync the simplification level with the model"""
