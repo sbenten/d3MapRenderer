@@ -220,6 +220,7 @@ class winHelper(helper):
         found = False
         try:
             # Query the registry...
+            self.__logger.info("Query registry for " + os.path.join("HKEY_CURRENT_USER", subname, valName))
             subkey = self.reg.OpenKey(self.reg.HKEY_CURRENT_USER, subname)
             
             i = 0
@@ -232,7 +233,7 @@ class winHelper(helper):
                     break
                 
                 i += 1
-        except self.reg.WindowsError as e:
+        except WindowsError as e:
             self.__logger.error(e.args[1] + ": " + subname)
         
         return found
@@ -250,6 +251,7 @@ class winHelper(helper):
         found = False
         try:
             # Query the registry...
+            self.__logger.info("Query registry for " + os.path.join("HKEY_CURRENT_USER", subname, valName))
             subkey = self.reg.OpenKey(self.reg.HKEY_CURRENT_USER, subname)
             
             i = 0
@@ -269,7 +271,7 @@ class winHelper(helper):
                 
                 i += 1
                 
-        except self.reg.WindowsError as e:
+        except WindowsError as e:
             self.__logger.error(e.args[1] + ": " + subname)
             
         return found            
