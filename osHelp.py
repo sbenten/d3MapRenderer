@@ -178,34 +178,35 @@ class winHelper(linuxHelper):
         """
         result = ""
 
-        args = []
-        args.append(self.node)
-        args.append(self.topojs)
-        args.append("-o")
-        args.append(os.path.join(folder, out + ".json"))
-        if len(idProperty) > 0:
-            args.append("--id-property")
-            args.append(idProperty)
-        if len(properties) > 0:
-            args.append("-p")
-            args.append(",".join(properties))
-        if len(quantization) > 0:
-            args.append("-q")
-            args.append(quantization)
-        if len(simplification) > 0:
-            args.append("-s")
-            args.append(simplification)
-        args.append("--")
-        if len(name) > 0:
-            args.append(name + "=" + shapefile)
-        else:
-            args.append(shapefile)
-        
-        self.__logger.info(" ".join(args)) 
-             
-        result = check_output(args, stderr=STDOUT, shell=True)
-        
-        self.__logger.info("topojson result \r\n" + result)               
+        if self.hasTopojson() == True:
+            args = []
+            args.append(self.node)
+            args.append(self.topojs)
+            args.append("-o")
+            args.append(os.path.join(folder, out + ".json"))
+            if len(idProperty) > 0:
+                args.append("--id-property")
+                args.append(idProperty)
+            if len(properties) > 0:
+                args.append("-p")
+                args.append(",".join(properties))
+            if len(quantization) > 0:
+                args.append("-q")
+                args.append(quantization)
+            if len(simplification) > 0:
+                args.append("-s")
+                args.append(simplification)
+            args.append("--")
+            if len(name) > 0:
+                args.append(name + "=" + shapefile)
+            else:
+                args.append(shapefile)
+            
+            self.__logger.info(" ".join(args)) 
+                 
+            result = check_output(args, stderr=STDOUT, shell=True)
+            
+            self.__logger.info("topojson result \r\n" + result)               
             
         return result
     
