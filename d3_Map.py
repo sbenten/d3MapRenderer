@@ -262,9 +262,9 @@ class d3MapRenderer:
         for f in self.model.formats:
             self.dlg.formatComboBox.addItem(f.name, f)
                 
-        if self.model.hasTopoJson == False:
+        if self.model.hasTopoJson() == False:
             t = topoJson()
-            self.dlg.formatComboBox.removeIndex(self.dlg.formatComboBox.findText(t.name))
+            self.dlg.formatComboBox.removeItem(self.dlg.formatComboBox.findText(t.name))
           
     def populateIdFields(self):
         """Populate the field list from the main layer"""

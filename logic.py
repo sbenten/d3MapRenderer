@@ -109,7 +109,7 @@ class model:
         found = False
         
         try:   
-            found = self.osHelp.hasTopoJson
+            found = self.osHelp.hasTopoJson()
            
         except Exception as e:
             # What? log and continue
