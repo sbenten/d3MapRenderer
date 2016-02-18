@@ -13,6 +13,7 @@
   <script src="http://d3js.org/queue.v1.min.js"></script>
   <script src="http://d3js.org/d3.geo.projection.v0.min.js"></script>
   <script src="http://underscorejs.org/underscore-min.js"></script>
+  <script src="js/d3.geo.zoom.js"></script>
   <script src="js/map.tip.js"></script>
   <script src="js/map.legend.js"></script>
   <script src="js/c3.min.js"></script>
@@ -66,6 +67,7 @@
       .attr("width", width)
       .attr("height", height);
 
+<%attachdrag%>
 <%attachtip%>
 
     //Vector polygons

@@ -113,10 +113,10 @@ class outFormat(object):
     
         return "".join(paths)
     
-    def createZoom(self):
+    def createZoom(self, selectedProjection):
         """Create the JavaScript function to zoom"""
         if self.outVars.allowZoom:
-            return "    svg.call(d3.behavior.zoom()\n      .scaleExtent([1, 40])\n      .on(\"zoom\", onZoom));"
+            return selectedProjection.zoomBehaviourScript()
         else:
             return "" 
         
@@ -196,22 +196,17 @@ class outFormat(object):
                 
         return val
      
-    def createZoomFunction(self):
+    def createZoomFunction(self, selectedProjection):
         """Create the Javascript zoom helper functions"""       
         
         template = """    // Zoom/pan 
     function onZoom() {
       <%hidetip%>
-
-      vectors.attr("transform", "translate("
-        + d3.event.translate
-        + ")scale(" + d3.event.scale + ")");
-
-<%vectorscaling%>
+      <%vectorscaling%>
     }"""
         
         if self.outVars.allowZoom == True:
-            template = template.replace("<%vectorscaling%>", self.createZoomScaling())
+            template = template.replace("<%vectorscaling%>", selectedProjection.zoomScalingScript(self.outVars.outputLayers))
             
             if self.tipInUse() == True:
                 return template.replace("<%hidetip%>", "hideTip();")
@@ -359,24 +354,12 @@ class outFormat(object):
         if self.tipInUse() == True and self.outVars.extTip == True:
             return """  <div id="extTip"></div>"""
         else:
-            return ""        
+            return ""       
         
-    def createZoomScaling(self):
-        """Create the JavaScript to re-scale the vectors"""
-        template = "      vector{index}.style(\"stroke-width\", {width} / d3.event.scale);\n"
-        scripts = []
-        if self.outVars.allowZoom:
-            i = 0
-            for o in self.outVars.outputLayers:
-                if o.strokeWidth > 0:
-                    script = template.format(
-                        index = i,
-                        width = o.strokeWidth
-                    )
-                    scripts.append(script)
-                i += 1
-    
-        return "".join(scripts)  
+    def createDragFunction(self, selectedProjection):
+        """Add a placeholder for any drag behaviours"""
+        return selectedProjection.dragBehaviourScript() 
+        
 
 class topoJson(outFormat):
     """Functions required to parse the html index file for TopoJson"""
@@ -435,8 +418,9 @@ class topoJson(outFormat):
         outHtml = outHtml.replace("<%height%>", str(self.outVars.height))
         outHtml = outHtml.replace("<%projection%>", proj)
         outHtml = outHtml.replace("<%vectorpaths%>", self.createSvgPaths())
-        outHtml = outHtml.replace("<%attachzoom%>", self.createZoom())
+        outHtml = outHtml.replace("<%attachzoom%>", self.createZoom(selectedProjection))
         outHtml = outHtml.replace("<%hidetip%>", self.hideTip())
+        outHtml = outHtml.replace("<%attachdrag%>", self.createDragFunction(selectedProjection))
         outHtml = outHtml.replace("<%attachtip%>", self.createTipFunction())
         outHtml = outHtml.replace("<%queuefiles%>", self.createQueueScript())  
         outHtml = outHtml.replace("<%readyparams%>", self.createReadyParams())  
@@ -447,7 +431,7 @@ class topoJson(outFormat):
         outHtml = outHtml.replace("<%addlegend%>", self.createLegend())
         outHtml = outHtml.replace("<%tipfunctions%>", self.createTipHelpers())
         outHtml = outHtml.replace("<%chartfunction%>", self.createChartFunction(self.outVars.vizWidth, self.outVars.vizHeight))
-        outHtml = outHtml.replace("<%zoomfunction%>", self.createZoomFunction())
+        outHtml = outHtml.replace("<%zoomfunction%>", self.createZoomFunction(selectedProjection))
         
         # overwrite the file with new contents
         f = codecs.open(path, "w", encoding="utf-8")
@@ -520,8 +504,9 @@ class geoJson(outFormat):
         outHtml = outHtml.replace("<%height%>", str(self.outVars.height))
         outHtml = outHtml.replace("<%projection%>", proj)
         outHtml = outHtml.replace("<%vectorpaths%>", self.createSvgPaths())
-        outHtml = outHtml.replace("<%attachzoom%>", self.createZoom())
+        outHtml = outHtml.replace("<%attachzoom%>", self.createZoom(selectedProjection))
         outHtml = outHtml.replace("<%hidetip%>", self.hideTip())
+        outHtml = outHtml.replace("<%attachdrag%>", self.createDragFunction(selectedProjection))
         outHtml = outHtml.replace("<%attachtip%>", self.createTipFunction())
         outHtml = outHtml.replace("<%queuefiles%>", self.createQueueScript())  
         outHtml = outHtml.replace("<%readyparams%>", self.createReadyParams())  
@@ -532,7 +517,7 @@ class geoJson(outFormat):
         outHtml = outHtml.replace("<%addlegend%>", self.createLegend())
         outHtml = outHtml.replace("<%tipfunctions%>", self.createTipHelpers())
         outHtml = outHtml.replace("<%chartfunction%>", self.createChartFunction(self.outVars.vizWidth, self.outVars.vizHeight))
-        outHtml = outHtml.replace("<%zoomfunction%>", self.createZoomFunction())
+        outHtml = outHtml.replace("<%zoomfunction%>", self.createZoomFunction(selectedProjection))
         
         # overwrite the file with new contents
         f = codecs.open(path, "w", encoding="utf-8")

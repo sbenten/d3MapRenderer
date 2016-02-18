@@ -62,6 +62,33 @@ class projection(object):
             p2 = self.getTopParallel(bound))
         
         return output
+    
+    def zoomBehaviourScript(self):
+        """Standard zoom behaviour script"""
+        return """    svg.call(d3.behavior.zoom()\n      .scaleExtent([1, 40])\n      .on("zoom", onZoom));"""
+    
+    def zoomScalingScript(self, outputLayers):
+        """Create the JavaScript to re-scale the vectors"""
+        
+        scripts = []
+        scripts.append("""vectors.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");\n""")
+        
+        template = "      vector{index}.style(\"stroke-width\", {width} / d3.event.scale);\n"
+        
+        for i, o in enumerate(outputLayers):
+            if o.strokeWidth > 0:
+                script = template.format(
+                    index = i,
+                    width = o.strokeWidth
+                )
+                scripts.append(script)
+    
+        return "".join(scripts)  
+    
+    def dragBehaviourScript(self):
+        """Default drag behaviour script"""
+        
+        return ""
         
 class aitoff(projection):
     
@@ -522,6 +549,52 @@ class nellHammer(projection):
         
     def toScript(self, bound, width, height): 
         return self.formatScript(bound, width, height) 
+    
+class orthographic(projection):
+
+    def __init__(self):
+        self.name = u"Orthographic"
+        self.d3Name = u"d3.geo.orthographic"
+        self.preview = "proj_orthographic.png"
+        
+    def toScript(self, bound, width, height): 
+        
+        script = "{n}()\n      .center([{cx}, {cy}])\n      .scale(250)\n      .translate([width / 2, height / 2])\n      .clipAngle(90)"
+        # TODO Scale needs calculating
+        output = script.format(
+            n = self.d3Name,
+            cx = self.getCenterX(bound),
+            cy = self.getCenterY(bound))
+
+        return output 
+    
+    def zoomBehaviourScript(self):
+        """Orthographic projections use d3.geo.zoom"""
+        return """    svg.call(d3.geo.zoom().projection(projection).on("zoom", onZoom))"""
+    
+    def zoomScalingScript(self, outputLayers):
+        """Orthographic version of the scaling script"""
+        return """svg.selectAll("path").attr("d", path);"""
+    
+    def dragBehaviourScript(self):
+        """Default drag behaviour script"""
+        output = """\n    var drag = d3.behavior.drag().on("drag", function() {
+      for (var i = 0; i < projections_.length; ++i) {
+        var projection = projections_[i],
+        angle = rotate(projection.rotate());
+        projection.rotate(angle.rotate);
+      }
+      d3.select("#rotations").selectAll("svg").each(function(d) {
+        d3.select(this).selectAll("path").attr("d", d.path);
+      });
+    });
+
+    function rotate(rotate) { var angle = update(rotate); return {angle: angle, rotate: rotate}; }
+
+    vectors.selectAll(".overlay").call(drag);\n"""
+
+        return output
+
 
 class patterson(projection):
 
