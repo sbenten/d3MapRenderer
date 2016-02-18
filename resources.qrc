@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="/plugins/d3MapRenderer" >
         <file>icon.png</file>
+        <file>settings.png</file>
     </qresource>
 </RCC>

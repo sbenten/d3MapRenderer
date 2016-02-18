@@ -16,7 +16,8 @@ import unittest
 
 from PyQt4.QtGui import QDialogButtonBox, QDialog
 
-from d3_Map_dialog import d3MapRendererDialog
+import imp
+d = imp.load_source('d3MapRendererDialog', '../d3_Map_dialog.py')
 
 from utilities import get_qgis_app
 QGIS_APP = get_qgis_app()
@@ -27,7 +28,7 @@ class d3MapRendererDialogTest(unittest.TestCase):
 
     def setUp(self):
         """Runs before each test."""
-        self.dialog = d3MapRendererDialog(None)
+        self.dialog = d.d3MapRendererDialog(None)
 
     def tearDown(self):
         """Runs after each test."""

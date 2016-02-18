@@ -2,9 +2,6 @@
 
 import math
 import sys
-current_module = sys.modules[__name__]
-
-from bbox import bound
 
 class projection(object):
     """Base class for a projection object"""
@@ -20,7 +17,11 @@ class projection(object):
         return ""
     
     def getCenterX(self, bound):
-        """Central position on the X Axis"""
+        """Central position on the X Axis"""       
+        return int(math.sqrt(math.pow(sum([bound.right, bound.left]), 2)))
+    
+    def getConicCenterX(self, bound):
+        """Central position on the X Axis for Conic scripts"""
         left = float(math.sqrt(math.pow(bound.left, 2)))
         right = float(math.sqrt(math.pow(bound.right, 2)))
                
@@ -55,7 +56,7 @@ class projection(object):
         
         output = script.format(
             n = self.d3Name,
-            cx = self.getCenterX(bound),
+            cx = self.getConicCenterX(bound),
             cy = self.getCenterY(bound),
             p1 = self.getBottomParallel(bound),
             p2 = self.getTopParallel(bound))

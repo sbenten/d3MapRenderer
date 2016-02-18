@@ -27,7 +27,7 @@ class chart(object):
         
         if self.stacked == True:  
             i = 1      
-            for range in ranges:
+            for r in ranges:
                 temp.append(delimit.format(i))
                 
                 i += 1
@@ -49,7 +49,6 @@ class chart(object):
         lmin = []
         lmax = []
         
-        rmin = 0
         rmax = 0
         
         for r in ranges:
@@ -61,7 +60,7 @@ class chart(object):
         rmin = min(lmin)   
         if self.stacked == True:
             # stacked charts require the total of the values on the y axis 
-           rmax = sum(lmax) 
+            rmax = sum(lmax) 
         else:
             rmax = max(lmax)
             

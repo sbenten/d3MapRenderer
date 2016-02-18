@@ -13,8 +13,8 @@ __date__ = '2015-10-09'
 __copyright__ = 'Copyright 2015, Simon Benten'
 
 import unittest
-
-import bbox 
+import imp
+b = imp.load_source('*', '../bbox.py')
 
 
 
@@ -23,62 +23,27 @@ class TestBBox(unittest.TestCase):
     
     def setUp(self):
         """Runs before each test."""
-        self.afghanistan  = bbox.bound(True, 60.48574218750002, 29.391943359375, 74.89130859375001, 38.456396484375)
-        self.argentina  = bbox.bound(True, -73.57626953124998, -55.032128906249945, -53.668554687500006, -21.802539062499974)
-        self.bangladesh = bbox.bound(True, 88.02343750000003, 20.790429687500023, 92.63164062500002, 26.57153320312497)
+        self.afghanistan  = b.bound()
+        self.afghanistan.setLeft(60.48574218750002)
+        self.afghanistan.setBottom(29.391943359375)
+        self.afghanistan.setRight(74.89130859375001)
+        self.afghanistan.setTop(38.456396484375)
+        self.argentina  = b.bound()
+        self.argentina.setLeft(-73.57626953124998)
+        self.argentina.setBottom(-55.032128906249945)
+        self.argentina.setRight(-53.668554687500006)
+        self.argentina.setTop(-21.802539062499974)
+        self.bangladesh = b.bound()
+        self.bangladesh.setLeft(88.02343750000003)
+        self.bangladesh.setBottom(20.790429687500023)
+        self.bangladesh.setRight(92.63164062500002)
+        self.bangladesh.setTop(26.57153320312497)
 
         pass
 
     def tearDown(self):
         """Runs after each test."""
         pass
-
-    def testMainExists(self):
-        """Check the d3 names for projections are correct."""
-        b = bbox.bounds()
-        self.afghanistan.isMain = True
-        b.append(self.afghanistan)
-    
-        self.assertIsNotNone(b.getMainBound(), "Where's Afghanistan gone?")
-        
-        #start again
-        b[:] = []
-        self.afghanistan.isMain = False
-        b.append(self.afghanistan)
-        self.argentina.isMain = True
-        b.append(self.argentina)
-
-        self.assertIsNotNone(b.getMainBound(), "Where's Argentina gone?")
-        
-        #start again
-        b[:] = []
-        self.afghanistan.isMain = False
-        b.append(self.afghanistan)
-        self.argentina.isMain = False
-        b.append(self.argentina)
-        self.bangladesh.isMain = True
-        b.append(self.bangladesh)
-
-        self.assertIsNotNone(b.getMainBound(), "Where's Bangladesh gone?")  
-    
-    def testMainNotExists(self):
-        """Check the main bounds are not found"""
-        b = bbox.bounds()
-        self.afghanistan.isMain = False
-        b.append(self.afghanistan)
-    
-        self.assertIsNone(b.getMainBound(), "Afghanistan should not be found!")
-        
-        #start again
-        b[:] = []
-        self.afghanistan.isMain = False
-        b.append(self.afghanistan)
-        self.argentina.isMain = False
-        b.append(self.argentina)
-        self.bangladesh.isMain = False
-        b.append(self.bangladesh)
-
-        self.assertIsNone(b.getMainBound(), "No country should be found!") 
     
     def testBounds(self):
         """Check the params assigned correctly"""

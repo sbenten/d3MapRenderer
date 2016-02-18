@@ -34,10 +34,14 @@ from qgis.gui import *
 
 # Import the code for the dialog
 from d3_Map_dialog import d3MapRendererDialog
+from d3MapSettings import d3MapSettings
+from settings import globalSettings
 
 from logic import model
 from logger import log
 from tree import vectorItem, fieldItem
+from d3MapRenderer import settings
+from d3MapRenderer.outputHelp import topoJson, geoJson
 
 
 class d3MapRenderer:
@@ -72,14 +76,25 @@ class d3MapRenderer:
         # Create the dialog (after translation) and keep reference
         self.dlg = d3MapRendererDialog()
         
-        # Init model onject
+        # Add an additional settings dialog
+        self.settingsDlg = d3MapSettings(iface)
+        
+        # Init global objects
         self.model = None
+        self.settings = None
+        self.webServerUrl = ""
 
         # Declare instance attributes
         self.actions = []
         self.menu = self.tr(u'&d3 Map Renderer')
         self.toolbar = self.iface.addToolBar(u'd3MapRenderer')
         self.toolbar.setObjectName(u'd3MapRenderer')
+        
+        
+    def runSettings(self):
+        """Run the settings dialog"""
+        self.settingsDlg.run()
+       
 
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
@@ -179,6 +194,13 @@ class d3MapRenderer:
             text=self.tr(u'd3 Map'),
             callback=self.run,
             parent=self.iface.mainWindow())
+        
+        setting_path = ':/plugins/d3MapRenderer/settings.png'
+        self.add_action(
+            setting_path,
+            text=self.tr(u'Settings'),
+            callback=self.runSettings,
+            parent=self.iface.mainWindow())
 
 
     def unload(self):
@@ -204,6 +226,14 @@ class d3MapRenderer:
         """Synd the Id Field with the model"""
         self.model.idField = str(self.dlg.idComboBox.currentText())
         
+    def changedFormatComboBox(self):
+        """Sync the selected output format with the model"""    
+        self.model.selectedFormat  = self.dlg.formatComboBox.itemData(self.dlg.formatComboBox.currentIndex())
+        
+        t = topoJson()
+        self.dlg.simplificationSlider.setEnabled( (self.dlg.formatComboBox.currentText() == t.name) )
+        
+        
     def changedProjectionComboBox(self):
         """Sync the selected projection with the model"""
         self.model.selectedProjection = self.dlg.projectionComboBox.itemData(self.dlg.projectionComboBox.currentIndex())
@@ -226,6 +256,15 @@ class d3MapRenderer:
         
         for v in self.model.vectors:
             self.dlg.mainLayerComboBox.addItem(v.name, v.name) 
+            
+    def populateFormats(self):
+        """Populate the output format list"""            
+        for f in self.model.formats:
+            self.dlg.formatComboBox.addItem(f.name, f)
+                
+        if self.model.hasTopoJson == False:
+            t = topoJson()
+            self.dlg.formatComboBox.removeIndex(self.dlg.formatComboBox.findText(t.name))
           
     def populateIdFields(self):
         """Populate the field list from the main layer"""
@@ -333,7 +372,26 @@ class d3MapRenderer:
         self.dlg.projectionComboBox.clear()
 
         for p in self.model.projections:
-            self.dlg.projectionComboBox.addItem(p.name, p)
+            self.dlg.projectionComboBox.addItem(p.name, p)    
+    
+    def populateFromSettings(self):
+        """Restore dialog settings from those stored in the project settings"""
+        
+        self.webServerUrl = self.settings.webServerUrl()
+        self.dlg.outputEdit.setText(self.settings.outputPath())
+        
+        # Last used format
+        lastFormat = self.settings.outputFormat()
+        if lastFormat != "":
+            t = topoJson()
+            if lastFormat != t.name or self.model.hasTopoJson() == True:
+                self.dlg.formatComboBox.setCurrentIndex(self.dlg.formatComboBox.findText(lastFormat))
+        
+        # Last used projection
+        lastProj = self.settings.projection()
+        if lastProj != "":
+            self.dlg.projectionComboBox.setCurrentIndex(self.dlg.projectionComboBox.findText(lastProj))
+        
         
     def populateVizChartTypes(self):
         """Add all the supported chart types"""
@@ -436,7 +494,7 @@ class d3MapRenderer:
         """Cautiously convert user input to an integer"""
         n = 0
         if len(s) > 0:
-           n = int(s) 
+            n = int(s) 
         
         return n
         
@@ -582,9 +640,13 @@ class d3MapRenderer:
             self.iface.messageBar().pushWidget(progressMessageBar, self.iface.messageBar().INFO)
 
             try:
+                # Save settings
+                self.settings.setOutputFormat(self.model.selectedFormat.name)
+                self.settings.setProjection(self.model.selectedProjection.name)
+                self.settings.setProjOutputPath(self.model.outputFolder)
+                
                 self.dlg.hide()
                 self.model.export(progress)   
-                #progressMessageBar.pushMessage("Error", \"Ooops, the plugin is not working as it should\", level=QgsMessageBar.CRITICAL, duration=3)
                
             except Exception as e:
                 # What? log and then re-throw
@@ -605,18 +667,9 @@ class d3MapRenderer:
             self.closeDialog()
             
         self.model = model(self.iface)
-        
-        # Perform check for topojson
-        if self.model.hasTopoJson():
-            self.setupUI()
-        else:
-            QMessageBox.critical(self.iface.mainWindow(), 
-                                 "Failed pre-requisite check", 
-                                 "This plugin requires an installation of node.js and the topojson package.\r\nPlease ensure node.js is installed and then run:\r\n'npm install -g topojson'\r\nSee the pre-requisites section at http://maprenderer.org/d3/", 
-                                 QMessageBox.Ok)
-            # No need to itdy up the UI, it hasn't been created yet
-            # Just close the dialog...
-            self.dlg.close()   
+        self.settings = globalSettings()
+        self.setupUI()        
+          
             
     def setupUI(self):
         """Show the dialog and bind events"""
@@ -637,15 +690,16 @@ class d3MapRenderer:
         self.dlg.mainLayerComboBox.currentIndexChanged.connect(self.changedMainLayerComboBox)
         self.dlg.idComboBox.currentIndexChanged.connect(self.changedIdComboBox)
         self.dlg.projectionComboBox.currentIndexChanged.connect(self.changedProjectionComboBox)
+        self.dlg.formatComboBox.currentIndexChanged.connect(self.changedFormatComboBox)
         self.dlg.simplificationSlider.valueChanged.connect(self.changedSimplificationSlider)
         self.dlg.outputEdit.textChanged.connect(self.changedOutput)
         self.dlg.outputButton.clicked.connect(self.doShowFolderDialog)
-        self.dlg.panZoomCheckBox.stateChanged.connect(self.changedPanZoom)
-        self.dlg.legendCheckBox.stateChanged.connect(self.changedLegend)
-        self.dlg.legendPositionComboBox.currentIndexChanged.connect(self.changedLegendPoitionComboBox)
         # extras tab        
         self.dlg.extraVectorCheckBox.stateChanged.connect(self.changedExtraVector)
         self.dlg.extraVectorTreeWidget.itemClicked.connect(self.changedExtraVectorItems)
+        self.dlg.panZoomCheckBox.stateChanged.connect(self.changedPanZoom)
+        self.dlg.legendCheckBox.stateChanged.connect(self.changedLegend)
+        self.dlg.legendPositionComboBox.currentIndexChanged.connect(self.changedLegendPoitionComboBox)
         # popup tab
         self.dlg.incPopupCheckBox.stateChanged.connect(self.changedPopupCheckBox)
         self.dlg.popupPositionComboBox.currentIndexChanged.connect(self.changedPopupPositionComboBox)
@@ -666,11 +720,15 @@ class d3MapRenderer:
         # populate the controls 
         self.populateMainLayers()
         self.populateProjections()
+        self.populateFormats()
         self.populateLegendPoition()
         self.populatePopupPoition()
         self.populateExtraLayers()
         self.populatePopupTreeWidget()
         self.populateVizChartTypes() 
+        
+        # read the stored settings
+        self.populateFromSettings()
         
         # Run the dialog event loop
         self.dlg.exec_()
@@ -685,16 +743,17 @@ class d3MapRenderer:
         self.dlg.mainLayerComboBox.clear()
         self.dlg.idComboBox.clear()
         self.dlg.projectionComboBox.clear()
+        self.dlg.formatComboBox.clear()
         self.dlg.simplificationSlider.setValue(0)
         self.dlg.chosenSimpLabel.setText("")
         self.dlg.outputEdit.setText("")
-        self.dlg.panZoomCheckBox.setChecked(False)
-        self.dlg.legendCheckBox.setChecked(False)
-        self.dlg.legendPositionComboBox.clear()
         # extras tab        
         self.dlg.extraVectorCheckBox.setChecked(False)
         self.dlg.extraVectorTreeWidget.clear()
         self.dlg.extraVectorTreeWidget.setEnabled(False)
+        self.dlg.panZoomCheckBox.setChecked(False)
+        self.dlg.legendCheckBox.setChecked(False)
+        self.dlg.legendPositionComboBox.clear()
         # popup tab
         self.dlg.incPopupCheckBox.setChecked(False)
         self.dlg.popupPositionComboBox.clear()
@@ -725,15 +784,16 @@ class d3MapRenderer:
             self.dlg.mainLayerComboBox.currentIndexChanged.disconnect()
             self.dlg.idComboBox.currentIndexChanged.disconnect()
             self.dlg.projectionComboBox.currentIndexChanged.disconnect()
+            self.dlg.formatComboBox.currentIndexChanged.disconnect()
             self.dlg.simplificationSlider.valueChanged.disconnect()
             self.dlg.outputEdit.textChanged.disconnect()
             self.dlg.outputButton.clicked.disconnect()
-            self.dlg.panZoomCheckBox.stateChanged.disconnect()
-            self.dlg.legendCheckBox.stateChanged.disconnect()
-            self.dlg.legendPositionComboBox.currentIndexChanged.disconnect()
             # extras tab        
             self.dlg.extraVectorCheckBox.stateChanged.disconnect()
             self.dlg.extraVectorTreeWidget.itemClicked.disconnect()
+            self.dlg.panZoomCheckBox.stateChanged.disconnect()
+            self.dlg.legendCheckBox.stateChanged.disconnect()
+            self.dlg.legendPositionComboBox.currentIndexChanged.disconnect()
             # popup tab
             self.dlg.incPopupCheckBox.stateChanged.disconnect()
             self.dlg.popupPositionComboBox.currentIndexChanged.disconnect()

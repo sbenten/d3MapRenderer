@@ -8,7 +8,7 @@ from subprocess import *
 
 from logger import log
 
-class topo:
+class osHelper:
     """Helper class to check for topojson"""
     
     def __init__(self):
@@ -17,15 +17,17 @@ class topo:
         
         self.platform = platform.system()
         self.isWindows = False
-        self.helper = helper()
-        
+        self.helper = linuxHelper()
+                
         self.__logger.info(platform.system())
         
         if platform.system() == "Windows":
             self.isWindows = True
             self.helper = winHelper()
+            
+        self.hasTopoJson = self.helper.hasTopojson()    
                 
-class helper:
+class linuxHelper:
     """Linux OS class for performing topojson commands"""
         
     def __init__(self):
@@ -117,7 +119,7 @@ class helper:
             
         return result
     
-class winHelper(helper):
+class winHelper(linuxHelper):
     """Windows OS class for performing topojson commands
     
         Windows requires extra messing around to call topojson (or any other npm package) from python"""

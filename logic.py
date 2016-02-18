@@ -14,12 +14,13 @@ from qgis.core import *
 from qgis.gui import *
 from qgis.utils import *
 from logger import log
-from osHelp import topo
+from osHelp import osHelper
 from symbology import *
 from projections import *
 from bbox import *
-from output import *
+from outputHelp import *
 from viz import *
+from gisWrapper import *
 
 class model:
     """Model for the UI"""
@@ -31,7 +32,8 @@ class model:
         self.__cssFile = "color.css"
         self.__selectedFields = []  
         self.__tempVizFields = [] 
-        self.__ranges = dataRanges()       
+        self.__ranges = dataRanges()    
+        self.__qgis = qgisWrapper()   
         
         self.__logger.info(QGis.QGIS_VERSION)
         self.__logger.info(sys.version)
@@ -42,6 +44,8 @@ class model:
         self.width = 800
         self.height = 600
         self.idField = ""
+        self.formats = []
+        self.selectedFormat = None
         self.simplification = ""
         self.outputFolder = u""
         self.vectors = []   
@@ -55,7 +59,7 @@ class model:
         self.selectedPopupPosition = 0
         self.panZoom = False
         self.extraVectors = False
-        self.topojson = topo()
+        self.osHelp = osHelper()
         self.hasViz = False 
         self.charts = [] 
         self.vizLabels = []  
@@ -74,6 +78,13 @@ class model:
                            "1e-4", "2e-4", "3e-4", "4e-4", "5e-4", "6e-4", "7e-4", "8e-4", "9e-4", 
                            "1e-3", "2e-3", "3e-3", "4e-3", "5e-3", "6e-3", "7e-3", "8e-3", "9e-3" ]
         
+        # list of output formats
+        frmts = [cls() for cls in outFormat.__subclasses__()]
+        for f in frmts:
+            self.formats.append(f)
+            
+        if len(self.formats) > 0:
+            self.selectedFormat = self.formats[0]
         
         # list of tested projections       
         projs = [cls() for cls in projection.__subclasses__()]
@@ -94,16 +105,18 @@ class model:
          
     def hasTopoJson(self):    
         """Does the system have node.js and topojson installed?""" 
+    
         found = False
         
         try:   
-            found = self.topojson.helper.hasTopojson()
+            found = self.osHelp.hasTopoJson
            
         except Exception as e:
-            # What? log and let the UI close
+            # What? log and continue
             self.__logger.error("Exception\r\n" + traceback.format_exc(None))
 
         return found
+        
          
     def setup(self): 
         """Get the vector layers from QGIS and perform other startup actions"""
@@ -153,6 +166,10 @@ class model:
                 
             self.__ranges.append(data)
             self.__tempVizFields[:] = []
+            
+    def getPopupTemplate(self):
+        """Return the preview of the html popup"""
+        return self.selectedFormat.getPopupTemplate(self.__selectedFields, self.hasViz, self.vizWidth, self.vizHeight)
             
     def getDataRangePreview(self):
         """Get the preview of fields in each data range"""
@@ -227,23 +244,6 @@ class model:
                 found = p
         return found    
     
-    def getPopupTemplate(self):
-        """Get the default html template for the popup based on the chosen fields"""        
-        html = []
-        row = "<tr><td>{0}</td><td>{1}</td></tr>\r"
-        chart = """<div id="chart" style="width: {0}px; height: {1}px"></div>"""
-        
-        if len(self.__selectedFields) > 0:
-            html.append("<table>\r")
-            for f in self.__selectedFields:
-                html.append(row.format(f, "{" + f + "}"))
-            html.append("</table>")
-        
-        if self.hasViz == True:
-            html.append(chart.format(str(self.vizWidth), str(self.vizHeight)))
-        
-        return "".join(html)
-    
     def getLayersForOutput(self):
         """Get all the layers selected for output in the order defined in the QGIS legend"""
         found = []
@@ -307,12 +307,10 @@ class model:
                 fieldType = f.typeName()    
                 break
             
-        i = 0
-        for c in renderer.categories():
+        for i, c in enumerate(renderer.categories()):
             css = cssstub + "c" + str(i)
             s = categorizedSymbol(geoType, field, fieldType, c, css, transparency)     
             syms.append(s)       
-            i += 1
         
         return syms
                             
@@ -325,12 +323,10 @@ class model:
         cssstub = self.getLayerObjectName(index)
         syms = symbols()
         
-        i = 0
-        for r in renderer.ranges():
+        for i, r in enumerate(renderer.ranges()):
             css = cssstub + "r" + str(i)
             s = graduatedSymbol(geoType, field, r, css, transparency)     
             syms.append(s)       
-            i += 1
             
         return syms
     
@@ -509,7 +505,7 @@ class model:
             
     def isWindows(self):
         """Windows OS?"""
-        return self.topojson.isWindows        
+        return self.osHelp.isWindows        
             
     def getSourceFolder(self):
         """Get the plugin html source"""
@@ -571,49 +567,15 @@ class model:
         folder = self.getDestFolder(uid)
         return os.path.join(folder, "data/legend.csv")
     
-    def getDestTopoFolder(self, uid):
+    def getDestJsonFolder(self, uid):
         """Get the destination shapefile folder"""
         folder = self.getDestFolder(uid)
-        return os.path.join(folder, "topo")
+        return os.path.join(folder, "json")
     
     def addColorColumn(self, layer):
         """Add a new column to hold the color used in symbology"""
-        if self.hasField(layer, self.__colorField) == False:
-            self.addField(layer, self.__colorField)
-            
-    def addField(self, layer, name):
-        """Add a new column to the layer data provider with the given name"""
-        self.__logger.info("Adding field: " + name)
-        
-        layer.startEditing()
-        
-        provider = layer.dataProvider()
-        provider.addAttributes([ QgsField(name, QVariant.String) ])
-        
-        layer.commitChanges()
-            
-    def hasField(self, layer, name):
-        """Does a particular field already exist?"""
-        result = False
-        
-        if layer.fieldNameIndex(name) > -1:
-            result = True
-        '''fields = layer.pendingFields()
-        for f in fields:
-            if f.name() == name:
-                result = True
-                break'''
-        
-        return result
-    
-    def saveShape(self, uid, vect):
-        """Save the shapefile in WGS84 with new color column"""       
-        crs = QgsCoordinateReferenceSystem(4326, QgsCoordinateReferenceSystem.EpsgCrsId)
-        QgsVectorFileWriter.writeAsVectorFormat(vect.layer,
-                                                vect.filePath,
-                                                "system",
-                                                crs,
-                                                "ESRI Shapefile")
+        if self.__qgis.hasField(layer, self.__colorField) == False:
+            self.__qgis.addField(layer, self.__colorField)                          
                                                         
     def getSafeString(self, val):
         """Return a string condsidered safe for use in file names"""
@@ -692,10 +654,13 @@ class model:
             self.logExportParams(main)
             
             # Create a class to help in replacing all the JavaScript in the index.html file
-            outVars = outputVars(main.layer, self.showHeader, self.idField, 
+            outVars = outputVars(main.layer, self.title, self.width, self.height, self.showHeader, self.idField, 
                                  (self.selectedPopupPosition == 1), 
                                  self.legend, self.panZoom, self.selectedLegendPosition,
-                                 self.selectedVizChart, self.__ranges, self.vizLabels) 
+                                 self.selectedVizChart, self.__ranges, self.vizLabels,
+                                 self.vizHeight, self.vizWidth) 
+            # Initialise bounding box for projection with full 
+            bbox = bound()
 
             # Create the directory structure
             self.__logger.info("EXPORT copying folders and files")
@@ -707,20 +672,28 @@ class model:
             
             # Get layers in correct order
             layers = self.getLayersForOutput()
-            i = 0
-            for vect in layers:     
+
+            for i, vect in enumerate(layers):     
                 self.__logger.info("EXPORT " + vect.name)   
                 vect.filePath = self.getDestShpFile(uid, vect)
                 
                 renderer = vect.layer.rendererV2()
                 
-                # Save shapefile with WSG84 coordinates
-                self.saveShape(uid, vect)
+                self.__qgis.saveShape(vect.layer, vect.filePath)
+
                 tick+=1
                 progress.setValue(tick)
                 
-                # Re-open saved shape file now its available for editing                               
-                destLayer = QgsVectorLayer(vect.filePath, vect.name, "ogr")
+                # Re-open saved shape file now its available for editing 
+                destLayer = self.__qgis.openShape(vect.filePath, vect.name)                              
+            
+                # Read the extent of the layer now its in the correct crs
+                if vect.main == True:
+                    extent = destLayer.extent()
+                    bbox.setLeft(extent.xMinimum())
+                    bbox.setBottom(extent.yMinimum())
+                    bbox.setRight(extent.xMaximum())
+                    bbox.setTop(extent.yMaximum())
             
                 # Add a color column
                 self.addColorColumn(destLayer)
@@ -745,9 +718,16 @@ class model:
                 tick+=1
                 progress.setValue(tick)
                           
-                # Create the topojson file
+                # Create the output json file
                 # And then store the details in order to write the index file
-                objName, name, bbox = self.output(uid, vect, i)
+                
+                path = self.getDestJsonFolder(uid)         
+                name = self.getSafeString(vect.name)  
+                objName = self.getLayerObjectName(i) 
+        
+                destPath = self.getUniqueFilePath(os.path.join(path, name + self.selectedFormat.extension))
+                objName, name = self.selectedFormat.convertShapeFile(path, destPath, vect.filePath, objName, self.simplification, self.idField, self.__colorField)
+                
                 hasTip = vect.main and self.popup  
                 hasViz = vect.main and self.hasViz
                 outlineWidth = syms.getAvergageOutlineWidth()     
@@ -756,7 +736,6 @@ class model:
                 progress.setValue(tick)         
                 
                 outVars.outputLayers.append(outputLayer(objName, name, outlineWidth, vect.main, hasTip, hasViz))
-                outVars.bboxes.append(bbox)
                 
                 if self.legend and vect.main:
                     # Create the legend for the main layer
@@ -764,12 +743,12 @@ class model:
                     
                 tick+=1
                 progress.setValue(tick)              
-                
-                i+=1
                   
             
             # Alter the index file
-            index = self.writeIndexFile(uid, outVars)
+            n = self.getDestIndexFile(uid)
+            
+            index = self.selectedFormat.writeIndexFile(n, outVars, bbox, self.selectedProjection, self.__selectedFields)
             tick+=1
             progress.setValue(tick)
             
@@ -791,55 +770,12 @@ class model:
                 
             # start browser
             webbrowser.open_new_tab("http://127.0.0.1:8080/{0}/index.html".format(uid))
-    
-    def writeIndexFile(self, uid, outVars):
-        """Read and write the index html file"""
-        n = self.getDestIndexFile(uid)
-        f = codecs.open(n, "r", encoding="utf-8")        
-        # Get the contents of the file
-        html = f.read()
-        f.close()
-            
-        proj = self.selectedProjection.toScript(outVars.bboxes.getMainBound(), self.width, self.height)
-        self.__logger.info(proj)
-        
-        # Can't use string format as it has a fit over css and javascript braces {}
-        outHtml = u""
-        outHtml = html.replace("<%title%>", self.title)
-        outHtml = outHtml.replace("<%header%>", outVars.createHeader(self.title))
-        outHtml = outHtml.replace("<%tooltiptemplate%>", self.getPopupTemplate())
-        outHtml = outHtml.replace("<%externallegend%>", outVars.createExtLegend())
-        outHtml = outHtml.replace("<%externaltip%>", outVars.createExtTip())
-        outHtml = outHtml.replace("<%width%>", str(self.width))
-        outHtml = outHtml.replace("<%height%>", str(self.height))
-        outHtml = outHtml.replace("<%projection%>", proj)
-        outHtml = outHtml.replace("<%vectorpaths%>", outVars.createSvgPaths())
-        outHtml = outHtml.replace("<%attachzoom%>", outVars.createZoom())
-        outHtml = outHtml.replace("<%hidetip%>", outVars.hideTip())
-        outHtml = outHtml.replace("<%attachtip%>", outVars.createTipFunction())
-        outHtml = outHtml.replace("<%queuefiles%>", outVars.createQueueScript())  
-        outHtml = outHtml.replace("<%readyparams%>", outVars.createReadyParams())  
-        outHtml = outHtml.replace("<%polygonobjects%>", outVars.createPolygonObjects())
-        outHtml = outHtml.replace("<%mainobject%>", outVars.createMainObject())
-        outHtml = outHtml.replace("<%vectorfeatures%>", outVars.createVectorFeatures())
-        outHtml = outHtml.replace("<%datastore%>", outVars.createDataStore())
-        outHtml = outHtml.replace("<%addlegend%>", outVars.createLegend())
-        outHtml = outHtml.replace("<%tipfunctions%>", outVars.createTipHelpers())
-        outHtml = outHtml.replace("<%chartfunction%>", outVars.createChartFunction(self.vizWidth, self.vizHeight))
-        outHtml = outHtml.replace("<%zoomfunction%>", outVars.createZoomFunction())
-        
-        # overwrite the file with new contents
-        f = codecs.open(n, "w", encoding="utf-8")
-        
-        f.write(outHtml)
-        f.close()
-                        
-        return n
-        
-    def output(self, uid, layer, index):
+ 
+'''       
+    def output(self, uid, vector, index):
         """Output a shapefile to topojson"""   
         path = self.getDestTopoFolder(uid)         
-        name = self.getSafeString(layer.name)  
+        name = self.getSafeString(vector.name)  
         
         fullPath = self.getUniqueFilePath(os.path.join(path, name + ".json"))
         
@@ -848,23 +784,42 @@ class model:
         
         objName = self.getLayerObjectName(index)  
         
-        quantization = ""
-        #if self.panZoom:
-        #    quantization = "1e5"
+        if self.hasTopoJson() == True:
         
-        result = self.topojson.helper.output(self.getDestTopoFolder(uid), 
-                                name, 
-                                objName, 
-                                layer.filePath, 
-                                quantization,
-                                self.simplification, 
-                                self.idField, 
-                                [self.__colorField])
+            quantization = ""
+            #if self.panZoom:
+            #    quantization = "1e5"
+            
+            result = self.osHelp.helper.output(self.getDestTopoFolder(uid), 
+                                    name, 
+                                    objName, 
+                                    vector.filePath, 
+                                    quantization,
+                                    self.simplification, 
+                                    self.idField, 
+                                    [self.__colorField])
+            
+        else:
+            
+            #Fall back to GeoJson
+            
+            # Calculate precision from selected steradian / 15            
+           
+            #precision = round(15 - (15 / len(self.steradians)) * (self.steradians.index(self.steradian) + 1))
+            
+            QgsVectorFileWriter.writeAsVectorFormat(vector.layer, 
+                                                    fullPath, 
+                                                    "utf-8", 
+                                                    self.getDefaultCrs(), 
+                                                    "GeoJson", 
+                                                    False, 
+                                                    layerOptions=['COORDINATE_PRECISION=3'])
         
-        matches = result.split()
+        return objName, name
         
-        return objName, name, bound(layer.main, matches[1], matches[2], matches[3], matches[4])
-        
+        #TODO Remove fields before writing to GeoJson
+        #TODO Update index file and javascript to cope with geojeson
+'''        
     
 class vector:
     """Base class for the layer abstracting away the QGIS details"""
@@ -883,6 +838,7 @@ class vector:
         self.fields = []
         self.vizFields = []
         self.defaultId = ""
+        
         self.isVisible = iface.legendInterface().isLayerVisible(layer) 
         self.transparency = 1 - (float(layer.layerTransparency()) / 100)
         for f in layer.pendingFields():
@@ -901,6 +857,7 @@ class vector:
                 
         renderer = layer.rendererV2()
         dump = renderer.dump()
+        
         
         if dump[0:6] == "SINGLE":
             self.rendererType = 0            
