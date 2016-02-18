@@ -23,9 +23,7 @@ class osHelper:
         
         if platform.system() == "Windows":
             self.isWindows = True
-            self.helper = winHelper()
-            
-        self.hasTopoJson = self.helper.hasTopojson()    
+            self.helper = winHelper() 
                 
 class linuxHelper:
     """Linux OS class for performing topojson commands"""
