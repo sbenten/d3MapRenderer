@@ -84,11 +84,38 @@ class projection(object):
                 scripts.append(script)
     
         return "".join(scripts)  
-    
-    def dragBehaviourScript(self):
-        """Default drag behaviour script"""
         
-        return ""
+""" TODO Projections
+# List of projections to support in the future...
+
+d3.geo.armadillo()
+d3.geo.azimuthalEqualArea()
+d3.geo.azimuthalEquidistant()
+d3.geo.berghaus()
+d3.geo.bonne()
+d3.geo.chamberlin()
+d3.geo.craig()
+d3.geo.cylindricalStereographic()
+d3.geo.gilbert()
+d3.geo.gingery()
+d3.geo.gnomonic()
+d3.geo.hammerRetroazimuthal()
+d3.geo.littrow()
+d3.geo.modifiedStereographic()
+d3.geo.peirceQuincuncial()
+d3.geo.polyhedron.butterfly()
+d3.geo.polyhedron.waterman()
+d3.geo.rectangularPolyconic()
+d3.geo.satellite()
+d3.geo.sinuMollweide()
+d3.geo.stereographic()
+d3.geo.twoPointAzimuthal()
+d3.geo.twoPointEquidistant()
+d3.geo.transverseMercator()
+d3.geo.wiechel()
+
+"""        
+        
         
 class aitoff(projection):
     
@@ -559,14 +586,29 @@ class orthographic(projection):
         
     def toScript(self, bound, width, height): 
         
-        script = "{n}()\n      .center([{cx}, {cy}])\n      .scale(250)\n      .translate([width / 2, height / 2])\n      .clipAngle(90)"
-        # TODO Scale needs calculating
+        script = "{n}()\n      .center([{cx}, {cy}])\n      .scale({s})\n      .translate([{tx}, {ty}])\n      .clipAngle(90)"
+        
+        scale = self.getScale(width, height)
+        transX = self.getTransform(scale, width)
+        transY = self.getTransform(scale, height)
+        
         output = script.format(
             n = self.d3Name,
             cx = self.getCenterX(bound),
-            cy = self.getCenterY(bound))
+            cy = self.getCenterY(bound),
+            s = scale,
+            tx = transX,
+            ty = transY)
 
         return output 
+
+    def getScale(self, width, height):
+        """Get the orthographic scale for the FULL globe"""
+        return 0.95 / max((1.99 / width), (1.99 / height))
+    
+    def getTransform(self, scale, axis):
+        """Get the transformation for the axis for the FULL globe"""
+        return axis - scale        
     
     def zoomBehaviourScript(self):
         """Orthographic projections use d3.geo.zoom"""
@@ -575,25 +617,6 @@ class orthographic(projection):
     def zoomScalingScript(self, outputLayers):
         """Orthographic version of the scaling script"""
         return """svg.selectAll("path").attr("d", path);"""
-    
-    def dragBehaviourScript(self):
-        """Default drag behaviour script"""
-        output = """\n    var drag = d3.behavior.drag().on("drag", function() {
-      for (var i = 0; i < projections_.length; ++i) {
-        var projection = projections_[i],
-        angle = rotate(projection.rotate());
-        projection.rotate(angle.rotate);
-      }
-      d3.select("#rotations").selectAll("svg").each(function(d) {
-        d3.select(this).selectAll("path").attr("d", d.path);
-      });
-    });
-
-    function rotate(rotate) { var angle = update(rotate); return {angle: angle, rotate: rotate}; }
-
-    vectors.selectAll(".overlay").call(drag);\n"""
-
-        return output
 
 
 class patterson(projection):

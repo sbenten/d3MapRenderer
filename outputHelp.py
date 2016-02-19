@@ -142,7 +142,7 @@ class outFormat(object):
     def hideTip(self):
         """Conditionally add the hide tip call to the map container"""
         if self.tipInUse() == True:
-            return """      .on("click", hideTip)"""
+            return """.on("click", hideTip)\n      """
         else:
             return ""
     
@@ -356,10 +356,6 @@ class outFormat(object):
         else:
             return ""       
         
-    def createDragFunction(self, selectedProjection):
-        """Add a placeholder for any drag behaviours"""
-        return selectedProjection.dragBehaviourScript() 
-        
 
 class topoJson(outFormat):
     """Functions required to parse the html index file for TopoJson"""
@@ -420,7 +416,6 @@ class topoJson(outFormat):
         outHtml = outHtml.replace("<%vectorpaths%>", self.createSvgPaths())
         outHtml = outHtml.replace("<%attachzoom%>", self.createZoom(selectedProjection))
         outHtml = outHtml.replace("<%hidetip%>", self.hideTip())
-        outHtml = outHtml.replace("<%attachdrag%>", self.createDragFunction(selectedProjection))
         outHtml = outHtml.replace("<%attachtip%>", self.createTipFunction())
         outHtml = outHtml.replace("<%queuefiles%>", self.createQueueScript())  
         outHtml = outHtml.replace("<%readyparams%>", self.createReadyParams())  
@@ -506,7 +501,6 @@ class geoJson(outFormat):
         outHtml = outHtml.replace("<%vectorpaths%>", self.createSvgPaths())
         outHtml = outHtml.replace("<%attachzoom%>", self.createZoom(selectedProjection))
         outHtml = outHtml.replace("<%hidetip%>", self.hideTip())
-        outHtml = outHtml.replace("<%attachdrag%>", self.createDragFunction(selectedProjection))
         outHtml = outHtml.replace("<%attachtip%>", self.createTipFunction())
         outHtml = outHtml.replace("<%queuefiles%>", self.createQueueScript())  
         outHtml = outHtml.replace("<%readyparams%>", self.createReadyParams())  

@@ -49,11 +49,10 @@
     //Map container
     var svg = d3.select("#map")
       .append("svg")
-	  .attr("id", "mapSvg")
+      .attr("id", "mapSvg")
       .attr("width", width)
       .attr("height", height)
-<%hidetip%>
-	  .append("g");
+      <%hidetip%>.append("g");
       
 <%attachzoom%>
 	
@@ -67,7 +66,6 @@
       .attr("width", width)
       .attr("height", height);
 
-<%attachdrag%>
 <%attachtip%>
 
     //Vector polygons
