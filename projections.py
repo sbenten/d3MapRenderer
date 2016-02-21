@@ -63,6 +63,18 @@ class projection(object):
         
         return output
     
+    def refineProjectionScript(self, mainObject):
+        """Standard script to refine projections scale and translation on the client-side"""
+        script =  """\n      // Refine projection
+      var b, s, t;
+      projection.scale(1).translate([0, 0]);
+      var b = path.bounds({m});
+      var s = .95 / Math.max((b[1][0] - b[0][0]) / width, (b[1][1] - b[0][1]) / height);
+      var t = [(width - s * (b[1][0] + b[0][0])) / 2, (height - s * (b[1][1] + b[0][1])) / 2];
+      projection.scale(s).translate(t);\n"""
+      
+        return script.format(m = mainObject)
+    
     def zoomBehaviourScript(self):
         """Standard zoom behaviour script"""
         return """    svg.call(d3.behavior.zoom()\n      .scaleExtent([1, 40])\n      .on("zoom", onZoom));"""
@@ -586,7 +598,7 @@ class orthographic(projection):
         
     def toScript(self, bound, width, height): 
         
-        script = "{n}()\n      .center([{cx}, {cy}])\n      .scale({s})\n      .translate([{tx}, {ty}])\n      .clipAngle(90)"
+        script = "{n}()\n      .scale({s})\n      .translate([{tx}, {ty}])\n      .clipAngle(90)\n      .rotate([{cx}, {cy}])"
         
         scale = self.getScale(width, height)
         transX = self.getTransform(scale, width)
@@ -601,6 +613,25 @@ class orthographic(projection):
             ty = transY)
 
         return output 
+    
+    def getCenterX(self, bound):
+        """Central position on the X Axis for Conic scripts"""
+        left = float(math.sqrt(math.pow(bound.left, 2)))
+        right = float(math.sqrt(math.pow(bound.right, 2)))
+              
+        val = int(sum([right, left]) /2)
+               
+        if bound.left > 0:
+            val = -val       
+            
+        if str(bound.left) == "-180.0" and str(bound.right) == "180.0":
+            val = 0.0
+        
+        return val
+    
+    def getCenterY(self, bound):
+        """Central position on the Y Axis"""
+        return -int(sum([bound.top, bound.bottom]) / 2)
 
     def getScale(self, width, height):
         """Get the orthographic scale for the FULL globe"""
@@ -608,7 +639,11 @@ class orthographic(projection):
     
     def getTransform(self, scale, axis):
         """Get the transformation for the axis for the FULL globe"""
-        return axis - scale        
+        return axis - scale     
+    
+    def refineProjectionScript(self, mainObject):
+        """Orthographic projection relies on the FULL globe, not just a particular layer"""
+        return ""
     
     def zoomBehaviourScript(self):
         """Orthographic projections use d3.geo.zoom"""

@@ -85,13 +85,18 @@ class TestProjections(unittest.TestCase):
         self.projWagner7 = projections.wagner7()
         self.projWinkelTripel = projections.winkelTripel()   
         
-        #Required for Albers projection tests
+        #Required for projection tests
         #Values retrieved from exports of Natural Earth ne_50_admin_0_countries.shp filtered by "admin" field
         self.afghanistan  = b.bound()
         self.afghanistan.setLeft(60.48574218750002)
         self.afghanistan.setBottom(29.391943359375)
         self.afghanistan.setRight(74.89130859375001)
         self.afghanistan.setTop(38.456396484375)
+        self.antarctica  = b.bound()
+        self.antarctica.setLeft(-180.0)
+        self.antarctica.setBottom(-90.0)
+        self.antarctica.setRight(180.0)
+        self.antarctica.setTop(-60.516208592)
         self.argentina  = b.bound()
         self.argentina.setLeft(-73.57626953124998)
         self.argentina.setBottom(-55.032128906249945)
@@ -127,6 +132,11 @@ class TestProjections(unittest.TestCase):
         self.canada.setBottom( 41.6748535156251)
         self.canada.setRight( -52.653662109375034)
         self.canada.setTop( 83.11611328125005)
+        self.chile = b.bound()
+        self.chile.setLeft(-109.453724739)
+        self.chile.setBottom(-55.918504223)
+        self.chile.setRight(-66.420806444)
+        self.chile.setTop(-17.506588198)
         self.dominica = b.bound()
         self.dominica.setLeft(-61.48115234375)
         self.dominica.setBottom( 15.227294921875)
@@ -359,6 +369,65 @@ class TestProjections(unittest.TestCase):
         rotation = self.projAlbers.getConicCenterX(self.sweden)
         self.assertEqual(rotation, 343, "Sweden rotation " + str(rotation) + " should be 343")  '''
 
+    def testOrthographicRotation(self):
+        """Check that the Orthographic projection returns the long/lat correct rotation"""
+
+        x = self.projOrthographic.getCenterX(self.newZealand)
+        y = self.projOrthographic.getCenterY(self.newZealand)
+        self.assertEqual(x, 177, "New Zealand rotation X " + str(x) + " should be 177") 
+        self.assertEqual(y, 30, "New Zealand rotation Y " + str(y) + " should be 30")
+        
+        x = self.projOrthographic.getCenterX(self.chile)
+        y = self.projOrthographic.getCenterY(self.chile)
+        self.assertEqual(x, 87, "Chile rotation X " + str(x) + " should be 87") 
+        self.assertEqual(y, 36, "Chile rotation Y " + str(y) + " should be 36")
+
+        x = self.projOrthographic.getCenterX(self.canada)
+        y = self.projOrthographic.getCenterY(self.canada)
+        self.assertEqual(x, 96, "Canada rotation X " + str(x) + " should be 96") 
+        self.assertEqual(y, -62, "Canada rotation Y " + str(y) + " should be -62")
+        
+        x = self.projOrthographic.getCenterX(self.iceland)
+        y = self.projOrthographic.getCenterY(self.iceland)
+        self.assertEqual(x, 19, "Iceland rotation X " + str(x) + " should be 19") 
+        self.assertEqual(y, -64, "Iceland rotation Y " + str(y) + " should be -64")
+        
+        x = self.projOrthographic.getCenterX(self.poland)
+        y = self.projOrthographic.getCenterY(self.poland)
+        self.assertEqual(x, -19, "Poland rotation X " + str(x) + " should be -19") 
+        self.assertEqual(y, -51, "Poland rotation Y " + str(y) + " should be -51")
+        
+        x = self.projOrthographic.getCenterX(self.malaysia)
+        y = self.projOrthographic.getCenterY(self.malaysia)
+        self.assertEqual(x, -109, "Malaysia rotation X " + str(x) + " should be -109") 
+        self.assertEqual(y, -4, "Malaysia rotation Y " + str(y) + " should be -4")        
+        
+        x = self.projOrthographic.getCenterX(self.zimbabwe)
+        y = self.projOrthographic.getCenterY(self.zimbabwe)
+        self.assertEqual(x, -29, "Zimbabwe rotation X " + str(x) + " should be -29") 
+        self.assertEqual(y, 19, "Zimbabwe rotation Y " + str(y) + " should be 19")  
+        
+        x = self.projOrthographic.getCenterX(self.antarctica)
+        y = self.projOrthographic.getCenterY(self.antarctica)
+        self.assertEqual(x, 180, "Antarctica rotation X " + str(x) + " should be 180") 
+        self.assertEqual(y, 75, "Antarctica rotation Y " + str(y) + " should be 75")         
+        
+        x = self.projOrthographic.getCenterX(self.france)
+        y = self.projOrthographic.getCenterY(self.france)
+        self.assertEqual(x, 58, "France rotation X " + str(x) + " should be 58") 
+        self.assertEqual(y, -14, "France rotation Y " + str(y) + " should be -14")
+        
+        x = self.projOrthographic.getCenterX(self.morocco)
+        y = self.projOrthographic.getCenterY(self.morocco)
+        self.assertEqual(x, 9, "Morocco rotation X " + str(x) + " should be 9") 
+        self.assertEqual(y, -28, "Morocco rotation Y " + str(y) + " should be -28")
+        
+        x = self.projOrthographic.getCenterX(self.japan)
+        y = self.projOrthographic.getCenterY(self.japan)
+        self.assertEqual(x, -134, "Japan rotation X " + str(x) + " should be -134") 
+        self.assertEqual(y, 22, "Japan rotation Y " + str(y) + " should be 22")
+        
+                
     def testD3Names(self):
         """Check the d3 names for projections are correct."""
         
