@@ -225,6 +225,7 @@ class d3MapRenderer:
     def changedIdComboBox(self):
         """Synd the Id Field with the model"""
         self.model.idField = str(self.dlg.idComboBox.currentText())
+        self.validateId()
         
     def changedFormatComboBox(self):
         """Sync the selected output format with the model"""    
@@ -436,8 +437,30 @@ class d3MapRenderer:
         """Perform basic input validation"""
         first = self.validateOutput()
         second = self.validateTitle()
+        third = self.validateId()
         
-        return first and second
+        return first and second and third
+    
+    def validateId(self):
+        """Perform validation on the Id field - just ensure an Id has been selected"""
+        result = True
+        if str(self.dlg.idComboBox.currentText()) == "":
+            result = False        
+        
+        self.validationResult(self.dlg.idComboBox, result)
+        
+        return result
+    
+    def validationResult(self, field, result):
+        """Highlight a particular UI field if validation failed"""
+        fieldType = type(field).__name__
+        
+        if result == False:
+            field.setStyleSheet(fieldType + " { background-color: #f6989d }")
+            field.setFocus()
+        else:
+            field.setStyleSheet(fieldType + " { background-color: #ffffff }")
+        
 
     def validateOutput(self):
         """Perform validation on the output directory"""
@@ -456,11 +479,7 @@ class d3MapRenderer:
             except UnicodeEncodeError: 
                 result = False
 
-        if result == True:
-            self.dlg.outputEdit.setStyleSheet('QLineEdit { background-color: #ffffff }')
-        else:
-            self.dlg.outputEdit.setStyleSheet('QLineEdit { background-color: #f6989d }')
-            self.dlg.outputEdit.setFocus()
+        self.validationResult(self.dlg.outputEdit, result)
             
         return result
             
@@ -474,10 +493,8 @@ class d3MapRenderer:
         result = True
         if len(self.dlg.titleEdit.text()) == 0: 
             result = False
-            self.dlg.titleEdit.setStyleSheet('QLineEdit { background-color: #f6989d }')
-            self.dlg.titleEdit.setFocus()
-        else:
-            self.dlg.titleEdit.setStyleSheet('QLineEdit { background-color: #ffffff }')
+            
+        self.validationResult(self.dlg.titleEdit, result)
         
         return result
             

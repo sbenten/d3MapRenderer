@@ -852,7 +852,7 @@ class vector:
             # An ID field? Set the default for the ID field option    
             upper = f.name().upper() 
             if upper == "ID" or upper == "OBJECT_ID" or upper == "OBJECTID":
-                self.defaultId = upper
+                self.defaultId = f.name()
                 
                 
         renderer = layer.rendererV2()
