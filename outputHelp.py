@@ -50,10 +50,6 @@ class outFormat(object):
         """Base implementation - does nothing"""
         raise NotImplementedError("Abstract method requires calling of override on derived class")  
     
-    def writeIndexFile(self, path, outVars, bound, selectedProjection, selectedFields):
-        """Base implementation - does nothing"""
-        raise NotImplementedError("Abstract method requires calling of override on derived class")
-    
     def getPopupTemplate(self, selectedFields, hasViz, vizWidth, vizHeight):
         """Get the default html template for the popup based on the chosen fields"""        
         html = []
@@ -355,7 +351,46 @@ class outFormat(object):
             return """  <div id="extTip"></div>"""
         else:
             return ""       
+ 
+    def writeIndexFile(self, path, outVars, bound, selectedProjection, selectedFields):
+        """Read and write the index html file"""
+        self.outVars = outVars
         
+        f = codecs.open(path, "r", encoding="utf-8")        
+        # Get the contents of the file
+        html = f.read()
+        f.close()
+        
+        # Can't use string format as it has a fit over css and javascript braces {}
+        outHtml = u""
+        outHtml = html.replace("<%title%>", self.outVars.title)
+        outHtml = outHtml.replace("<%header%>", self.createHeader(self.outVars.title))
+        outHtml = outHtml.replace("<%tooltiptemplate%>", self.getPopupTemplate(selectedFields, self.vizInUse(), self.outVars.vizWidth, self.outVars.vizHeight))
+        outHtml = outHtml.replace("<%externallegend%>", self.createExtLegend())
+        outHtml = outHtml.replace("<%externaltip%>", self.createExtTip())
+        outHtml = outHtml.replace("<%width%>", str(self.outVars.width))
+        outHtml = outHtml.replace("<%height%>", str(self.outVars.height))
+        outHtml = outHtml.replace("<%projection%>", selectedProjection.toScript(bound, self.outVars.width, self.outVars.height))
+        outHtml = outHtml.replace("<%vectorpaths%>", self.createSvgPaths())
+        outHtml = outHtml.replace("<%attachzoom%>", self.createZoom(selectedProjection))
+        outHtml = outHtml.replace("<%hidetip%>", self.hideTip())
+        outHtml = outHtml.replace("<%attachtip%>", self.createTipFunction())
+        outHtml = outHtml.replace("<%queuefiles%>", self.createQueueScript())  
+        outHtml = outHtml.replace("<%readyparams%>", self.createReadyParams())  
+        outHtml = outHtml.replace("<%polygonobjects%>", self.createPolygonObjects())
+        outHtml = outHtml.replace("<%refineprojection%>", selectedProjection.refineProjectionScript(self.createMainObject()))
+        outHtml = outHtml.replace("<%vectorfeatures%>", self.createVectorFeatures())
+        outHtml = outHtml.replace("<%datastore%>", self.createDataStore())
+        outHtml = outHtml.replace("<%addlegend%>", self.createLegend())
+        outHtml = outHtml.replace("<%tipfunctions%>", self.createTipHelpers())
+        outHtml = outHtml.replace("<%chartfunction%>", self.createChartFunction(self.outVars.vizWidth, self.outVars.vizHeight))
+        outHtml = outHtml.replace("<%zoomfunction%>", self.createZoomFunction(selectedProjection))
+        
+        # overwrite the file with new contents
+        f = codecs.open(path, "w", encoding="utf-8")
+        
+        f.write(outHtml)
+        f.close()       
 
 class topoJson(outFormat):
     """Functions required to parse the html index file for TopoJson"""
@@ -391,7 +426,7 @@ class topoJson(outFormat):
         return objName, name
     
 
-    def writeIndexFile(self, path, outVars, bound, selectedProjection, selectedFields):
+        '''    def writeIndexFile(self, path, outVars, bound, selectedProjection, selectedFields):
         """Read and write the index html file"""
         self.outVars = outVars
         
@@ -432,7 +467,7 @@ class topoJson(outFormat):
         f = codecs.open(path, "w", encoding="utf-8")
         
         f.write(outHtml)
-        f.close()
+        f.close()'''
                          
 
 class geoJson(outFormat):
@@ -476,7 +511,7 @@ class geoJson(outFormat):
         
         return objName, name
 
-    def writeIndexFile(self, path, outVars, bound, selectedProjection, selectedFields):
+        '''    def writeIndexFile(self, path, outVars, bound, selectedProjection, selectedFields):
         """Read and write the index html file"""
         self.outVars = outVars
         
@@ -517,7 +552,7 @@ class geoJson(outFormat):
         f = codecs.open(path, "w", encoding="utf-8")
         
         f.write(outHtml)
-        f.close()
+        f.close()'''
         
     def createPolygonObjects(self):
         """Create the Svg polygon objects"""
