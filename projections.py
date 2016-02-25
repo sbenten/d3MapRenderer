@@ -684,6 +684,71 @@ class robinson(projection):
     def toScript(self, bound, width, height): 
         return self.formatScript(bound, width, height)
     
+'''class satellite(projection):
+
+    def __init__(self):
+        self.name = u"Satellite"
+        self.d3Name = u"d3.geo.satellite"
+        self.preview = "proj_robinson.png"
+        
+    def toScript(self, bound, width, height): 
+    
+        distance = 1.1    
+        script = """{n}()    
+    .distance({d})
+    .scale({s})
+    .rotate([{cx}, {cy}, 0])
+    .center([{cx}, {cy}])
+    .tilt(25)
+    .clipAngle(Math.acos(1 / {d}) * 180 / Math.PI - 1e-6)
+    .precision(.1)"""
+        
+        scale = self.getScale(width, height)
+        
+        output = script.format(
+            n = self.d3Name,
+            d = distance,
+            cx = self.getCenterX(bound),
+            cy = self.getCenterY(bound),
+            s = scale)
+
+        return output 
+    
+    def getCenterX(self, bound):
+        """Central position on the X Axis for Conic scripts"""
+        left = float(math.sqrt(math.pow(bound.left, 2)))
+        right = float(math.sqrt(math.pow(bound.right, 2)))
+              
+        val = int(sum([right, left]) /2)
+               
+        if bound.left > 0:
+            val = -val       
+            
+        if str(bound.left) == "-180.0" and str(bound.right) == "180.0":
+            val = 0.0
+        
+        return val
+    
+    def getCenterY(self, bound):
+        """Central position on the Y Axis"""
+        return -int(sum([bound.top, bound.bottom]) / 2)
+
+    def getScale(self, width, height):
+        """Get the orthographic scale for the FULL globe"""
+        return 0.95 / max((1.99 / width), (1.99 / height))   
+    
+    def refineProjectionScript(self, mainObject):
+        """Orthographic projection relies on the FULL globe, not just a particular layer"""
+        return ""
+    
+    def zoomBehaviourScript(self):
+        """Orthographic projections use d3.geo.zoom"""
+        return """    svg.call(d3.geo.zoom().projection(projection).on("zoom", onZoom))"""
+    
+    def zoomScalingScript(self, outputLayers):
+        """Orthographic version of the scaling script"""
+        return """svg.selectAll("path").attr("d", path);"""'''
+    
 class sinusoidal(projection):
     
     def __init__(self):

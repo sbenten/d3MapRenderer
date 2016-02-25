@@ -232,7 +232,12 @@ class d3MapRenderer:
         self.model.selectedFormat  = self.dlg.formatComboBox.itemData(self.dlg.formatComboBox.currentIndex())
         
         t = topoJson()
-        self.dlg.simplificationSlider.setEnabled( (self.dlg.formatComboBox.currentText() == t.name) )
+        enabled = (self.dlg.formatComboBox.currentText() == t.name)
+        self.dlg.simplificationSlider.setEnabled(enabled)
+        if enabled == True:
+            self.dlg.chosenSimpLabel.setVisible(True)
+        else:
+            self.dlg.chosenSimpLabel.setVisible(False)                                               
         
         
     def changedProjectionComboBox(self):
@@ -254,9 +259,16 @@ class d3MapRenderer:
     def populateMainLayers(self):
         """Populate the layer combobox with the vector layer list"""
         self.dlg.mainLayerComboBox.clear()
+        topMost = ""
         
         for v in self.model.vectors:
+            if v.isVisible == True and topMost == "":
+                topMost = v.name
+            
             self.dlg.mainLayerComboBox.addItem(v.name, v.name) 
+            
+        if topMost != "":
+            self.dlg.mainLayerComboBox.setCurrentIndex(self.dlg.mainLayerComboBox.findText(topMost))
             
     def populateFormats(self):
         """Populate the output format list"""            
@@ -386,12 +398,16 @@ class d3MapRenderer:
         if lastFormat != "":
             t = topoJson()
             if lastFormat != t.name or self.model.hasTopoJson() == True:
-                self.dlg.formatComboBox.setCurrentIndex(self.dlg.formatComboBox.findText(lastFormat))
+                formatIndex = self.dlg.formatComboBox.findText(lastFormat)
+                if formatIndex > -1:
+                    self.dlg.formatComboBox.setCurrentIndex(formatIndex)
         
         # Last used projection
         lastProj = self.settings.projection()
         if lastProj != "":
-            self.dlg.projectionComboBox.setCurrentIndex(self.dlg.projectionComboBox.findText(lastProj))
+            projIndex = self.dlg.projectionComboBox.findText(lastProj)
+            if projIndex > -1:
+                self.dlg.projectionComboBox.setCurrentIndex(projIndex)
         
         
     def populateVizChartTypes(self):
