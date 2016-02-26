@@ -679,7 +679,7 @@ class d3MapRenderer:
                 self.settings.setProjOutputPath(self.model.outputFolder)
                 
                 self.dlg.hide()
-                self.model.export(progress)   
+                self.model.export(progress, self.settings.webServerUrl())   
                
             except Exception as e:
                 # What? log and then re-throw

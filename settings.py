@@ -38,6 +38,9 @@ class globalSettings(object):
         if isinstance(val, unicode) == False:
             raise ValueError("Web server Url must be a text value")
         
+        if val.endswith("/") == False:
+            val = val + "/"
+        
         self.s.setValue("d3MapRenderer/WebServerUrl", val)
     
     def setProjOutputPath(self, val):

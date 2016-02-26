@@ -638,7 +638,7 @@ class model:
         self.__logger.info(template.format("Labels", ", ".join(self.vizLabels)))       
 
         
-    def export(self, progress):
+    def export(self, progress, webServerUrl):
         """Main export function. Do the stuff.
         
         :param progress: Progress bar widget.
@@ -769,57 +769,8 @@ class model:
             progress.setValue(tick)
                 
             # start browser
-            webbrowser.open_new_tab("http://127.0.0.1:8080/{0}/index.html".format(uid))
- 
-'''       
-    def output(self, uid, vector, index):
-        """Output a shapefile to topojson"""   
-        path = self.getDestTopoFolder(uid)         
-        name = self.getSafeString(vector.name)  
-        
-        fullPath = self.getUniqueFilePath(os.path.join(path, name + ".json"))
-        
-        path, name = os.path.split(fullPath)
-        name, ext = os.path.splitext(name) 
-        
-        objName = self.getLayerObjectName(index)  
-        
-        if self.hasTopoJson() == True:
-        
-            quantization = ""
-            #if self.panZoom:
-            #    quantization = "1e5"
-            
-            result = self.osHelp.helper.output(self.getDestTopoFolder(uid), 
-                                    name, 
-                                    objName, 
-                                    vector.filePath, 
-                                    quantization,
-                                    self.simplification, 
-                                    self.idField, 
-                                    [self.__colorField])
-            
-        else:
-            
-            #Fall back to GeoJson
-            
-            # Calculate precision from selected steradian / 15            
-           
-            #precision = round(15 - (15 / len(self.steradians)) * (self.steradians.index(self.steradian) + 1))
-            
-            QgsVectorFileWriter.writeAsVectorFormat(vector.layer, 
-                                                    fullPath, 
-                                                    "utf-8", 
-                                                    self.getDefaultCrs(), 
-                                                    "GeoJson", 
-                                                    False, 
-                                                    layerOptions=['COORDINATE_PRECISION=3'])
-        
-        return objName, name
-        
-        #TODO Remove fields before writing to GeoJson
-        #TODO Update index file and javascript to cope with geojeson
-'''        
+            webbrowser.open_new_tab("{0}{1}/index.html".format(webServerUrl, uid))
+     
     
 class vector:
     """Base class for the layer abstracting away the QGIS details"""
@@ -837,7 +788,8 @@ class vector:
         self.type = layer.type()
         self.fields = []
         self.vizFields = []
-        self.defaultId = ""
+        self.defaultId = ""        
+        self.hasLabel = self.hasLabels()
         
         self.isVisible = iface.legendInterface().isLayerVisible(layer) 
         self.transparency = 1 - (float(layer.layerTransparency()) / 100)
@@ -869,3 +821,12 @@ class vector:
     def isSingleRenderer(self):
         """Is this a single renderer type?"""
         return self.rendererType == 0
+    
+    def hasLabels(self):
+        """Check if the layer has labeling enabled"""
+        enabled = False
+        if self.layer.customProperty("labeling/enabled") != None:
+            enabled = self.layer.customProperty("labeling/enabled").lower() == "true"
+            
+        return enabled
+        
