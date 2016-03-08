@@ -46,7 +46,7 @@ class outFormat(object):
         self.outVars = None
         self.__logger = log(self.__class__.__name__)
     
-    def convertShapeFile(self, destFolder, destPath, sourcePath, objName, simplification, idField):
+    def convertShapeFile(self, destFolder, destPath, sourcePath, objName, simplification, idField, idAttribute, preserveAttributes):
         """Base implementation - does nothing"""
         raise NotImplementedError("Abstract method requires calling of override on derived class")  
     
@@ -277,10 +277,10 @@ class outFormat(object):
         """Create the polygon vector features"""
         scripts = []
         template = """      vector{index} = vectors{index}.selectAll("path").data(object{index}.features);
-      vector{index}.enter()\n"""
-        static = """        .append("path")
-        .attr("id", function (d) { return d.id; })
-        .attr("d", path)
+      vector{index}.enter()
+        .append("path")\n"""
+        main = """        .attr("id", function (d) { return d.id; })\n"""
+        static = """        .attr("d", path)
         .attr("class", function (d) { return d.properties.d3Css; })"""
         tip = """\n        .on("click", function (d) { return showTip(d.id); });\n\n"""
         
@@ -290,6 +290,8 @@ class outFormat(object):
                 index = i
             )
             scripts.append(script)
+            if o.isMain == True:
+                scripts.append(main)
             scripts.append(static)
 
             if o.hasTip == True or o.hasViz == True:
@@ -405,10 +407,10 @@ class topoJson(outFormat):
         self.__logger = log(self.__class__.__name__)
 
 
-    def convertShapeFile(self, destFolder, destPath, sourcePath, objName, simplification, idField, colorField):
+    def convertShapeFile(self, destFolder, destPath, sourcePath, objName, simplification, idAttribute, preserveAttributes):
         """Output a shapefile to topojson"""   
         path, name = os.path.split(destPath)
-        name, ext = os.path.splitext(name)  
+        name, ext = os.path.splitext(name)          
         
         quantization = ""
         #if self.panZoom:
@@ -420,54 +422,10 @@ class topoJson(outFormat):
                                 sourcePath, 
                                 quantization,
                                 simplification, 
-                                idField, 
-                                [colorField])
+                                idAttribute, 
+                                preserveAttributes)
             
         return objName, name
-    
-
-        '''    def writeIndexFile(self, path, outVars, bound, selectedProjection, selectedFields):
-        """Read and write the index html file"""
-        self.outVars = outVars
-        
-        f = codecs.open(path, "r", encoding="utf-8")        
-        # Get the contents of the file
-        html = f.read()
-        f.close()
-            
-        proj = selectedProjection.toScript(bound, self.outVars.width, self.outVars.height)
-        self.__logger.info(proj)
-        
-        # Can't use string format as it has a fit over css and javascript braces {}
-        outHtml = u""
-        outHtml = html.replace("<%title%>", self.outVars.title)
-        outHtml = outHtml.replace("<%header%>", self.createHeader(self.outVars.title))
-        outHtml = outHtml.replace("<%tooltiptemplate%>", self.getPopupTemplate(selectedFields, self.vizInUse(), self.outVars.vizWidth, self.outVars.vizHeight))  
-        outHtml = outHtml.replace("<%externallegend%>", self.createExtLegend())
-        outHtml = outHtml.replace("<%externaltip%>", self.createExtTip())
-        outHtml = outHtml.replace("<%width%>", str(self.outVars.width))
-        outHtml = outHtml.replace("<%height%>", str(self.outVars.height))
-        outHtml = outHtml.replace("<%projection%>", proj)
-        outHtml = outHtml.replace("<%vectorpaths%>", self.createSvgPaths())
-        outHtml = outHtml.replace("<%attachzoom%>", self.createZoom(selectedProjection))
-        outHtml = outHtml.replace("<%hidetip%>", self.hideTip())
-        outHtml = outHtml.replace("<%attachtip%>", self.createTipFunction())
-        outHtml = outHtml.replace("<%queuefiles%>", self.createQueueScript())  
-        outHtml = outHtml.replace("<%readyparams%>", self.createReadyParams())  
-        outHtml = outHtml.replace("<%polygonobjects%>", self.createPolygonObjects())
-        outHtml = outHtml.replace("<%refineprojection%>", selectedProjection.refineProjectionScript(self.createMainObject()))
-        outHtml = outHtml.replace("<%vectorfeatures%>", self.createVectorFeatures())
-        outHtml = outHtml.replace("<%datastore%>", self.createDataStore())
-        outHtml = outHtml.replace("<%addlegend%>", self.createLegend())
-        outHtml = outHtml.replace("<%tipfunctions%>", self.createTipHelpers())
-        outHtml = outHtml.replace("<%chartfunction%>", self.createChartFunction(self.outVars.vizWidth, self.outVars.vizHeight))
-        outHtml = outHtml.replace("<%zoomfunction%>", self.createZoomFunction(selectedProjection))
-        
-        # overwrite the file with new contents
-        f = codecs.open(path, "w", encoding="utf-8")
-        
-        f.write(outHtml)
-        f.close()'''
                          
 
 class geoJson(outFormat):
@@ -482,7 +440,7 @@ class geoJson(outFormat):
         self.outVars = None    
         self.__logger = log(self.__class__.__name__)
 
-    def convertShapeFile(self, destFolder, destPath, sourcePath, objName, simplification, idField, colorField):
+    def convertShapeFile(self, destFolder, destPath, sourcePath, objName, simplification, idAttribute, preserveAttributes):
         """Output a shapefile to GeoJson"""          
         path, name = os.path.split(destPath)
         name, ext = os.path.splitext(name) 
@@ -490,9 +448,8 @@ class geoJson(outFormat):
         qgisLayer = self.__qgis.openShape(sourcePath, objName)
         
         # Combine the list of attributes to preserve
-        preserveAttributes = []
-        preserveAttributes.append(idField)
-        preserveAttributes.append(colorField)
+        if idAttribute != "":
+            preserveAttributes.append(idAttribute)
         
         #TODO Reference to layer
         self.__qgis.removeFields(qgisLayer, preserveAttributes)
@@ -510,49 +467,6 @@ class geoJson(outFormat):
                                                 layerOptions=['COORDINATE_PRECISION=15'])
         
         return objName, name
-
-        '''    def writeIndexFile(self, path, outVars, bound, selectedProjection, selectedFields):
-        """Read and write the index html file"""
-        self.outVars = outVars
-        
-        f = codecs.open(path, "r", encoding="utf-8")        
-        # Get the contents of the file
-        html = f.read()
-        f.close()
-            
-        proj = selectedProjection.toScript(bound, self.outVars.width, self.outVars.height)
-        self.__logger.info(proj)
-        
-        # Can't use string format as it has a fit over css and javascript braces {}
-        outHtml = u""
-        outHtml = html.replace("<%title%>", self.outVars.title)
-        outHtml = outHtml.replace("<%header%>", self.createHeader(self.outVars.title))
-        outHtml = outHtml.replace("<%tooltiptemplate%>", self.getPopupTemplate(selectedFields, self.vizInUse(), self.outVars.vizWidth, self.outVars.vizHeight))
-        outHtml = outHtml.replace("<%externallegend%>", self.createExtLegend())
-        outHtml = outHtml.replace("<%externaltip%>", self.createExtTip())
-        outHtml = outHtml.replace("<%width%>", str(self.outVars.width))
-        outHtml = outHtml.replace("<%height%>", str(self.outVars.height))
-        outHtml = outHtml.replace("<%projection%>", proj)
-        outHtml = outHtml.replace("<%vectorpaths%>", self.createSvgPaths())
-        outHtml = outHtml.replace("<%attachzoom%>", self.createZoom(selectedProjection))
-        outHtml = outHtml.replace("<%hidetip%>", self.hideTip())
-        outHtml = outHtml.replace("<%attachtip%>", self.createTipFunction())
-        outHtml = outHtml.replace("<%queuefiles%>", self.createQueueScript())  
-        outHtml = outHtml.replace("<%readyparams%>", self.createReadyParams())  
-        outHtml = outHtml.replace("<%polygonobjects%>", self.createPolygonObjects())
-        outHtml = outHtml.replace("<%refineprojection%>", selectedProjection.refineProjectionScript(self.createMainObject()))
-        outHtml = outHtml.replace("<%vectorfeatures%>", self.createVectorFeatures())
-        outHtml = outHtml.replace("<%datastore%>", self.createDataStore())
-        outHtml = outHtml.replace("<%addlegend%>", self.createLegend())
-        outHtml = outHtml.replace("<%tipfunctions%>", self.createTipHelpers())
-        outHtml = outHtml.replace("<%chartfunction%>", self.createChartFunction(self.outVars.vizWidth, self.outVars.vizHeight))
-        outHtml = outHtml.replace("<%zoomfunction%>", self.createZoomFunction(selectedProjection))
-        
-        # overwrite the file with new contents
-        f = codecs.open(path, "w", encoding="utf-8")
-        
-        f.write(outHtml)
-        f.close()'''
         
     def createPolygonObjects(self):
         """Create the Svg polygon objects"""
@@ -572,10 +486,11 @@ class geoJson(outFormat):
         """Create the polygon vector features"""
         scripts = []
         template = """      vector{index} = vectors{index}.selectAll("path").data(object{index}.features);
-      vector{index}.enter()\n"""
-        static = """        .append("path")
-        .attr("id", function (d) { return d.properties.""" + self.outVars.idField + """; })
-        .attr("d", path)
+      vector{index}.enter()
+        .append("path")\n"""
+      
+        main = """        .attr("id", function (d) { return d.properties.""" + self.outVars.idField + """; })\n"""
+        static = """        .attr("d", path)
         .attr("class", function (d) { return d.properties.d3Css; })"""
         tip = """\n        .on("click", function (d) { return showTip(d.properties.""" + self.outVars.idField + """); });\n\n"""
         
@@ -585,6 +500,8 @@ class geoJson(outFormat):
                 index = i
             )
             scripts.append(script)
+            if o.isMain == True:
+                scripts.append(main)
             scripts.append(static)
 
             if o.hasTip == True or o.hasViz == True:

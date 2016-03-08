@@ -21,6 +21,7 @@ from bbox import *
 from outputHelp import *
 from viz import *
 from gisWrapper import *
+from labelHelper import labeling
 
 class model:
     """Model for the UI"""
@@ -614,6 +615,7 @@ class model:
         self.__logger.info(template.format("Main layer", main.name))
         self.__logger.info(template.format("IDField", self.idField))
         self.__logger.info(template.format("Projection", self.selectedProjection.name))
+        self.__logger.info(template.format("Format", self.selectedFormat.name))
         self.__logger.info(template.format("Simplify", self.simplification))
         self.__logger.info(template.format("Output", self.outputFolder))
         self.__logger.info(template.format("Zoom/Pan", str(self.panZoom)))
@@ -718,15 +720,27 @@ class model:
                 tick+=1
                 progress.setValue(tick)
                           
+
+                # Determine the attributes to preserve from the shapefile
+                # Limited to color, id and label fields
+                # Popup attributes are preserved in a CSV file                
+                preserveAttributes = [self.__colorField]
+                if vect.labels.hasLabels() == True:
+                    preserveAttributes.append(vect.labels.fieldName)
+                    
+                # Only output the id field for the main layer
+                idAttribute = ""
+                if vect.main == True:
+                    idAttribute = self.idField        
+        
                 # Create the output json file
-                # And then store the details in order to write the index file
-                
                 path = self.getDestJsonFolder(uid)         
                 name = self.getSafeString(vect.name)  
                 objName = self.getLayerObjectName(i) 
-        
+                
+                # And then store the details in order to write the index file
                 destPath = self.getUniqueFilePath(os.path.join(path, name + self.selectedFormat.extension))
-                objName, name = self.selectedFormat.convertShapeFile(path, destPath, vect.filePath, objName, self.simplification, self.idField, self.__colorField)
+                objName, name = self.selectedFormat.convertShapeFile(path, destPath, vect.filePath, objName, self.simplification, idAttribute, preserveAttributes)
                 
                 hasTip = vect.main and self.popup  
                 hasViz = vect.main and self.hasViz
@@ -748,7 +762,7 @@ class model:
             # Alter the index file
             n = self.getDestIndexFile(uid)
             
-            index = self.selectedFormat.writeIndexFile(n, outVars, bbox, self.selectedProjection, self.__selectedFields)
+            self.selectedFormat.writeIndexFile(n, outVars, bbox, self.selectedProjection, self.__selectedFields)
             tick+=1
             progress.setValue(tick)
             
@@ -779,7 +793,7 @@ class vector:
         """Initialise the layer"""
         
         self.rendererType = 0
-        self.id = layer.id
+        self.id = layer.id()
         self.name = layer.name()
         self.layer = layer
         self.filePath = ""
@@ -789,7 +803,9 @@ class vector:
         self.fields = []
         self.vizFields = []
         self.defaultId = ""        
-        self.hasLabel = self.hasLabels()
+        
+        self.labels = labeling(layer)
+
         
         self.isVisible = iface.legendInterface().isLayerVisible(layer) 
         self.transparency = 1 - (float(layer.layerTransparency()) / 100)
@@ -822,11 +838,4 @@ class vector:
         """Is this a single renderer type?"""
         return self.rendererType == 0
     
-    def hasLabels(self):
-        """Check if the layer has labeling enabled"""
-        enabled = False
-        if self.layer.customProperty("labeling/enabled") != None:
-            enabled = self.layer.customProperty("labeling/enabled").lower() == "true"
-            
-        return enabled
         
