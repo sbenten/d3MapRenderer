@@ -534,6 +534,10 @@ class d3MapRenderer:
     def changedHeight(self):
         """Sync height setting with the model"""
         self.model.height = self.safeConvertToInt(self.dlg.heightEdit.text())
+
+    def changedLabels(self):
+        """Sync the labels setting with the model"""
+        self.model.showLabels = self.dlg.labelsCheckBox.isChecked()  
         
     def changedPanZoom(self):
         """Sync the pan and zoom setting with the model"""
@@ -730,6 +734,7 @@ class d3MapRenderer:
         # extras tab        
         self.dlg.extraVectorCheckBox.stateChanged.connect(self.changedExtraVector)
         self.dlg.extraVectorTreeWidget.itemClicked.connect(self.changedExtraVectorItems)
+        self.dlg.labelsCheckBox.stateChanged.connect(self.changedLabels)
         self.dlg.panZoomCheckBox.stateChanged.connect(self.changedPanZoom)
         self.dlg.legendCheckBox.stateChanged.connect(self.changedLegend)
         self.dlg.legendPositionComboBox.currentIndexChanged.connect(self.changedLegendPoitionComboBox)
@@ -738,6 +743,7 @@ class d3MapRenderer:
         self.dlg.popupPositionComboBox.currentIndexChanged.connect(self.changedPopupPositionComboBox)
         self.dlg.popupTreeWidget.itemClicked.connect(self.changedPopupItems)
         # viz tab
+        # TODO: Main layer changed does not refresh viz fields
         self.dlg.incVizCheckBox.stateChanged.connect(self.changedVizCheckBox)
         self.dlg.vizTypeComboBox.currentIndexChanged.connect(self.changedVizTypeComboBox)
         self.dlg.vizWidthEdit.textChanged.connect(self.changedVizWidth)
@@ -784,6 +790,7 @@ class d3MapRenderer:
         self.dlg.extraVectorCheckBox.setChecked(False)
         self.dlg.extraVectorTreeWidget.clear()
         self.dlg.extraVectorTreeWidget.setEnabled(False)
+        self.dlg.labelsCheckBox.setChecked(False)
         self.dlg.panZoomCheckBox.setChecked(False)
         self.dlg.legendCheckBox.setChecked(False)
         self.dlg.legendPositionComboBox.clear()
@@ -824,6 +831,7 @@ class d3MapRenderer:
             # extras tab        
             self.dlg.extraVectorCheckBox.stateChanged.disconnect()
             self.dlg.extraVectorTreeWidget.itemClicked.disconnect()
+            self.dlg.labelsCheckBox.stateChanged.disconnect()
             self.dlg.panZoomCheckBox.stateChanged.disconnect()
             self.dlg.legendCheckBox.stateChanged.disconnect()
             self.dlg.legendPositionComboBox.currentIndexChanged.disconnect()

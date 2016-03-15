@@ -305,7 +305,7 @@
       </rect>
      </property>
      <property name="toolTip">
-      <string>The simplification level used during the creation of the topojson file, with options from none to extreme.</string>
+      <string>The simplification level used during the creation of the TopoJson file, with options from none to extreme.</string>
      </property>
      <property name="maximum">
       <number>90</number>
@@ -418,80 +418,11 @@
     <attribute name="toolTip">
      <string>Include extra layers</string>
     </attribute>
-    <widget class="QWidget" name="formLayoutWidget_2">
-     <property name="geometry">
-      <rect>
-       <x>0</x>
-       <y>0</y>
-       <width>781</width>
-       <height>811</height>
-      </rect>
-     </property>
-     <layout class="QFormLayout" name="extrasLayout">
-      <property name="fieldGrowthPolicy">
-       <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
-      </property>
-      <property name="horizontalSpacing">
-       <number>10</number>
-      </property>
-      <property name="verticalSpacing">
-       <number>10</number>
-      </property>
-      <property name="margin">
-       <number>10</number>
-      </property>
-      <item row="0" column="0">
-       <widget class="QLabel" name="incExtraVectorLabel">
-        <property name="text">
-         <string>Include other vector layers?</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="1">
-       <widget class="QCheckBox" name="extraVectorCheckBox">
-        <property name="toolTip">
-         <string>Include other vector layers in the visualisation?</string>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="extraVectorLabel">
-        <property name="text">
-         <string>Vector layers</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="1">
-       <widget class="QTreeWidget" name="extraVectorTreeWidget">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
-        <property name="toolTip">
-         <string>Choose additional layers to output.</string>
-        </property>
-        <property name="autoScroll">
-         <bool>false</bool>
-        </property>
-        <attribute name="headerVisible">
-         <bool>false</bool>
-        </attribute>
-        <column>
-         <property name="text">
-          <string notr="true">1</string>
-         </property>
-        </column>
-       </widget>
-      </item>
-     </layout>
-    </widget>
     <widget class="QLabel" name="legendLabel">
      <property name="geometry">
       <rect>
-       <x>10</x>
-       <y>285</y>
+       <x>4</x>
+       <y>315</y>
        <width>203</width>
        <height>21</height>
       </rect>
@@ -506,8 +437,8 @@
     <widget class="QCheckBox" name="legendCheckBox">
      <property name="geometry">
       <rect>
-       <x>226</x>
-       <y>285</y>
+       <x>220</x>
+       <y>315</y>
        <width>20</width>
        <height>20</height>
       </rect>
@@ -522,8 +453,8 @@
     <widget class="QLabel" name="panZoomLabel">
      <property name="geometry">
       <rect>
-       <x>10</x>
-       <y>250</y>
+       <x>4</x>
+       <y>280</y>
        <width>206</width>
        <height>21</height>
       </rect>
@@ -541,8 +472,8 @@
      </property>
      <property name="geometry">
       <rect>
-       <x>226</x>
-       <y>320</y>
+       <x>220</x>
+       <y>350</y>
        <width>545</width>
        <height>27</height>
       </rect>
@@ -554,8 +485,8 @@
     <widget class="QLabel" name="legendPositionLabel">
      <property name="geometry">
       <rect>
-       <x>10</x>
-       <y>320</y>
+       <x>4</x>
+       <y>350</y>
        <width>206</width>
        <height>21</height>
       </rect>
@@ -570,14 +501,118 @@
     <widget class="QCheckBox" name="panZoomCheckBox">
      <property name="geometry">
       <rect>
-       <x>226</x>
-       <y>250</y>
+       <x>220</x>
+       <y>280</y>
        <width>20</width>
        <height>20</height>
       </rect>
      </property>
      <property name="toolTip">
       <string>Allow the user to zoom and pan around the d3 map?</string>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+    <widget class="QTreeWidget" name="extraVectorTreeWidget">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="geometry">
+      <rect>
+       <x>220</x>
+       <y>40</y>
+       <width>545</width>
+       <height>192</height>
+      </rect>
+     </property>
+     <property name="toolTip">
+      <string>Choose additional layers to output.</string>
+     </property>
+     <property name="autoScroll">
+      <bool>false</bool>
+     </property>
+     <attribute name="headerVisible">
+      <bool>false</bool>
+     </attribute>
+     <column>
+      <property name="text">
+       <string notr="true">1</string>
+      </property>
+     </column>
+    </widget>
+    <widget class="QLabel" name="extraVectorLabel">
+     <property name="geometry">
+      <rect>
+       <x>4</x>
+       <y>40</y>
+       <width>206</width>
+       <height>36</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Vector layers</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+     </property>
+    </widget>
+    <widget class="QLabel" name="incLabelsLabel">
+     <property name="geometry">
+      <rect>
+       <x>4</x>
+       <y>242</y>
+       <width>206</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Include labels?</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+     </property>
+    </widget>
+    <widget class="QLabel" name="incExtraVectorLabel">
+     <property name="geometry">
+      <rect>
+       <x>4</x>
+       <y>9</y>
+       <width>206</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Include other vector layers?</string>
+     </property>
+    </widget>
+    <widget class="QCheckBox" name="labelsCheckBox">
+     <property name="geometry">
+      <rect>
+       <x>220</x>
+       <y>242</y>
+       <width>545</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="toolTip">
+      <string>Include vector layer labels in the visualisation?</string>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+    <widget class="QCheckBox" name="extraVectorCheckBox">
+     <property name="geometry">
+      <rect>
+       <x>220</x>
+       <y>9</y>
+       <width>545</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="toolTip">
+      <string>Include other vector layers in the visualisation?</string>
      </property>
      <property name="text">
       <string/>
@@ -591,108 +626,144 @@
     <attribute name="toolTip">
      <string>Popup information</string>
     </attribute>
-    <widget class="QWidget" name="formLayoutWidget_3">
+    <widget class="QPlainTextEdit" name="popupPreviewEdit">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
      <property name="geometry">
       <rect>
-       <x>0</x>
-       <y>0</y>
-       <width>781</width>
-       <height>811</height>
+       <x>220</x>
+       <y>280</y>
+       <width>550</width>
+       <height>192</height>
       </rect>
      </property>
-     <layout class="QFormLayout" name="formLayout">
-      <property name="fieldGrowthPolicy">
-       <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
+     <property name="toolTip">
+      <string>Preview of the popup information which will be output by the plugin. Can be altered later.</string>
+     </property>
+     <property name="readOnly">
+      <bool>true</bool>
+     </property>
+    </widget>
+    <widget class="QComboBox" name="popupPositionComboBox">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="geometry">
+      <rect>
+       <x>220</x>
+       <y>41</y>
+       <width>550</width>
+       <height>27</height>
+      </rect>
+     </property>
+     <property name="toolTip">
+      <string>Display attribute information as a bubble popup, or position it yourself later.</string>
+     </property>
+    </widget>
+    <widget class="QTreeWidget" name="popupTreeWidget">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="geometry">
+      <rect>
+       <x>220</x>
+       <y>78</y>
+       <width>550</width>
+       <height>192</height>
+      </rect>
+     </property>
+     <property name="toolTip">
+      <string>Choose information from the main layer attributes.</string>
+     </property>
+     <attribute name="headerVisible">
+      <bool>false</bool>
+     </attribute>
+     <column>
+      <property name="text">
+       <string notr="true">1</string>
       </property>
-      <property name="horizontalSpacing">
-       <number>10</number>
-      </property>
-      <property name="verticalSpacing">
-       <number>10</number>
-      </property>
-      <property name="margin">
-       <number>10</number>
-      </property>
-      <item row="0" column="0">
-       <widget class="QLabel" name="incPopupLabel">
-        <property name="text">
-         <string>Include information popup?</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="1">
-       <widget class="QCheckBox" name="incPopupCheckBox">
-        <property name="toolTip">
-         <string>Allow the display of attribute information when the user clicks on an object from the main layer?</string>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="popupPositionLabel">
-        <property name="text">
-         <string>Popup position</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="1">
-       <widget class="QComboBox" name="popupPositionComboBox">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
-        <property name="toolTip">
-         <string>Display attribute information as a bubble popup, or position it yourself later.</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="0">
-       <widget class="QLabel" name="popupFieldsLabel">
-        <property name="text">
-         <string>Popup fields</string>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="0">
-       <widget class="QLabel" name="popupPreviewLabel">
-        <property name="text">
-         <string>Preview</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="1">
-       <widget class="QTreeWidget" name="popupTreeWidget">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
-        <property name="toolTip">
-         <string>Choose information from the main layer attributes.</string>
-        </property>
-        <attribute name="headerVisible">
-         <bool>false</bool>
-        </attribute>
-        <column>
-         <property name="text">
-          <string notr="true">1</string>
-         </property>
-        </column>
-       </widget>
-      </item>
-      <item row="3" column="1">
-       <widget class="QPlainTextEdit" name="popupPreviewEdit">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
-        <property name="toolTip">
-         <string>Preview of the popup information which will be output by the plugin. Can be altered later.</string>
-        </property>
-        <property name="readOnly">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-     </layout>
+     </column>
+    </widget>
+    <widget class="QLabel" name="popupPositionLabel">
+     <property name="geometry">
+      <rect>
+       <x>9</x>
+       <y>41</y>
+       <width>201</width>
+       <height>27</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Popup position</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+     </property>
+    </widget>
+    <widget class="QLabel" name="incPopupLabel">
+     <property name="geometry">
+      <rect>
+       <x>9</x>
+       <y>10</y>
+       <width>201</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Include information popup?</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+     </property>
+    </widget>
+    <widget class="QLabel" name="popupFieldsLabel">
+     <property name="geometry">
+      <rect>
+       <x>9</x>
+       <y>78</y>
+       <width>201</width>
+       <height>36</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Popup fields</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+     </property>
+    </widget>
+    <widget class="QLabel" name="popupPreviewLabel">
+     <property name="geometry">
+      <rect>
+       <x>9</x>
+       <y>280</y>
+       <width>201</width>
+       <height>36</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Preview</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+     </property>
+    </widget>
+    <widget class="QCheckBox" name="incPopupCheckBox">
+     <property name="geometry">
+      <rect>
+       <x>220</x>
+       <y>10</y>
+       <width>550</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="toolTip">
+      <string>Allow the display of attribute information when the user clicks on an object from the main layer?</string>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
     </widget>
    </widget>
    <widget class="QWidget" name="tab_2">
@@ -1017,6 +1088,7 @@ Choose data which fits the chosen chart type.</string>
   <tabstop>buttonBox</tabstop>
   <tabstop>extraVectorCheckBox</tabstop>
   <tabstop>extraVectorTreeWidget</tabstop>
+  <tabstop>labelsCheckBox</tabstop>
   <tabstop>panZoomCheckBox</tabstop>
   <tabstop>legendCheckBox</tabstop>
   <tabstop>legendPositionComboBox</tabstop>

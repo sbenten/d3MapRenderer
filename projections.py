@@ -97,7 +97,7 @@ class projection(object):
     
         return "".join(scripts)  
         
-""" TODO Projections
+""" TODO: Extra projections
 # List of projections to support in the future...
 
 d3.geo.armadillo()
@@ -590,6 +590,8 @@ class nellHammer(projection):
         return self.formatScript(bound, width, height) 
     
 class orthographic(projection):
+
+    # TODO: Ortrhographic labels do not refresh on rotation
 
     def __init__(self):
         self.name = u"Orthographic"

@@ -1,61 +1,116 @@
 import sys
 from qgis.core import *
+from logger import log
 
-class labeling:
+class labeling(object):
     """Helper class for labeling"""  
     
-    def __init__(self, layer):
+    def __init__(self, layer, index):
         """Retrieve any label settings
         
         :param layer: The QgsVectorLayer to examine for label settings 
         :type layer: QgsVectorLayer   
+        
+        :param index: The index of the layer in the array of layers for output 
+        :type index: int   
+        
         """
-        self.enabled = (layer.customProperty("labeling/enabled", u"").lower() == "true")
-        self.fieldName = layer.customProperty("labeling/fieldName", u"")
-        self.fontFamily = layer.customProperty("labeling/fontFamily", u"")
-        self.fontBold = (layer.customProperty("labeling/fontBold", u"").lower() == "true")
-        self.fontItalic = (layer.customProperty("labeling/fontItalic", u"").lower() == "true")
-        self.fontStrikeout = (layer.customProperty("labeling/fontStrikeout", u"").lower() == "true")
-        self.fontUnderline = (layer.customProperty("labeling/fontUnderline", u"").lower() == "true")  
-        self.fontSize = float(layer.customProperty("labeling/fontSize", "10")) 
+        self.__logger = log(self.__class__.__name__)
+        
+        self.layer = layer
+        self.index = index
+        
+        self.enabled = self.getBooleanProperty("labeling/enabled")
+        self.fieldName = self.layer.customProperty("labeling/fieldName", u"")
+        self.fontFamily = self.layer.customProperty("labeling/fontFamily", u"")
+        self.fontBold = self.getBooleanProperty("labeling/fontBold")
+        self.fontItalic = self.getBooleanProperty("labeling/fontItalic")
+        self.fontStrikeout = self.getBooleanProperty("labeling/fontStrikeout")
+        self.fontUnderline = self.getBooleanProperty("labeling/fontUnderline")  
+        self.fontSize = float(self.layer.customProperty("labeling/fontSize", "10")) 
   
-        self.textColorA = int(layer.customProperty("labeling/textColorA", "255"))
-        self.textColorB = int(layer.customProperty("labeling/textColorB", "0"))
-        self.textColorG = int(layer.customProperty("labeling/textColorG", "0"))
-        self.textColorR = int(layer.customProperty("labeling/textColorR", "0"))
-        self.textTransparency = int(layer.customProperty("labeling/textTransp", "0")) 
+        self.textColorA = int(self.layer.customProperty("labeling/textColorA", "255"))
+        self.textColorB = int(self.layer.customProperty("labeling/textColorB", "0"))
+        self.textColorG = int(self.layer.customProperty("labeling/textColorG", "0"))
+        self.textColorR = int(self.layer.customProperty("labeling/textColorR", "0"))
+        self.textTransparency = int(self.layer.customProperty("labeling/textTransp", "0")) 
 
-        self.bufferDraw = (layer.customProperty("labeling/bufferDraw", u"").lower() == "true")
-        self.bufferColorA = int(layer.customProperty("labeling/bufferColorA", "255"))
-        self.bufferColorB = int(layer.customProperty("labeling/bufferColorB", "255"))
-        self.bufferColorG = int(layer.customProperty("labeling/bufferColorG", "255"))
-        self.bufferColorR = int(layer.customProperty("labeling/bufferColorR", "255"))
-        self.bufferTransparency = int(layer.customProperty("labeling/bufferTransp", "0"))
-        self.bufferSize = float(layer.customProperty("labeling/bufferSize", "1"))
+        self.bufferDraw = self.getBooleanProperty("labeling/bufferDraw")
+        self.bufferColorA = int(self.layer.customProperty("labeling/bufferColorA", "255"))
+        self.bufferColorB = int(self.layer.customProperty("labeling/bufferColorB", "255"))
+        self.bufferColorG = int(self.layer.customProperty("labeling/bufferColorG", "255"))
+        self.bufferColorR = int(self.layer.customProperty("labeling/bufferColorR", "255"))
+        self.bufferTransparency = int(self.layer.customProperty("labeling/bufferTransp", "0"))
+        self.bufferSize = float(self.layer.customProperty("labeling/bufferSize", "1"))
 
-        self.shadowDraw = (layer.customProperty("labeling/shadowDraw", u"").lower() == "true")
-        self.shadowColorB = int(layer.customProperty("labeling/shadowColorB", "0"))
-        self.shadowColorG = int(layer.customProperty("labeling/shadowColorG", "0"))
-        self.shadowColorR = int(layer.customProperty("labeling/shadowColorR", "0"))
-        self.shadowTransparency = int(layer.customProperty("labeling/shadowTransparency", "30"))
-        self.shadowOffsetAngle = int(layer.customProperty("labeling/shadowOffsetAngle", "135"))
-        self.shadowOffsetDist = int(layer.customProperty("labeling/shadowOffsetDist", "1"))
-        self.shadowRadius = float(layer.customProperty("labeling/shadowRadius", "1.5"))
+        self.shadowDraw = self.getBooleanProperty("labeling/shadowDraw")
+        self.shadowColorB = int(self.layer.customProperty("labeling/shadowColorB", "0"))
+        self.shadowColorG = int(self.layer.customProperty("labeling/shadowColorG", "0"))
+        self.shadowColorR = int(self.layer.customProperty("labeling/shadowColorR", "0"))
+        self.shadowTransparency = int(self.layer.customProperty("labeling/shadowTransparency", "30"))
+        self.shadowOffsetAngle = int(self.layer.customProperty("labeling/shadowOffsetAngle", "135"))
+        self.shadowOffsetDist = int(self.layer.customProperty("labeling/shadowOffsetDist", "1"))
+        self.shadowRadius = float(self.layer.customProperty("labeling/shadowRadius", "1.5"))
         
-        self.placement = int(layer.customProperty("labeling/placement", "0"))
-        self.quadOffset = int(layer.customProperty("labeling/quadOffset", "4"))
+        self.placement = int(self.layer.customProperty("labeling/placement", "0"))
+        self.quadOffset = int(self.layer.customProperty("labeling/quadOffset", "4"))
         
-        self.isExpression = (layer.customProperty("labeling/isExpression", u"").lower() == "true")
+        self.isExpression = self.getBooleanProperty("labeling/isExpression")
+
+    def getBooleanProperty(self, prop):
+        """Not all booleans are treated equally"""
+        val = False
+        
+        try:
+            # A real boolean?
+            val = (self.layer.customProperty(prop, False) == True)
+        except AttributeError:
+            try:
+                # A text value for a boolean?
+                val = (self.layer.customProperty(prop, u"").lower() == "true")
+            except AttributeError:
+                self.__logger.info("No idea what the value for {0} is".format(prop))
+                pass
+            pass
+    
+        return val
 
     def hasLabels(self):
         """Does the layer have labels enabled and a field specified?
         At the moment expressions are not supported"""
         return self.enabled == True and self.fieldName != u"" and self.isExpression == False
-
-    def toCss(self):
-        """Convert the label settings to CSS3"""
+    
+    def getObjectScript(self):
+        """Return the Javascript for creating the SVG text elements"""
+        if self.hasLabels() == True:
+            template = """      label{i} = vectors{i}.selectAll("text").data(object{i}.features);
+      label{i}.enter()
+        .append("text")
+        .attr("x", function(d) {b} return path.centroid(d)[0]; {e})
+        .attr("y", function(d) {b} return path.centroid(d)[1]; {e})
+        .text(function(d) {b} return d.properties.{fieldName}; {e}})
+        .attr("class", "label{i}");""".format(
+                                              b = "{",
+                                              i = self.index,
+                                              fieldName = self.fieldName,
+                                              e = "}")
+            '''.attr("x", function (d) { return path.centroid(d)[0] > -1 ? 6 : -6;  })'''
+            
+        else:
+            return ""
         
-        return """.label{b} 
+    def getZoomScript(self):
+        """Return the script to resize SVG text elements"""
+        if self.hasLabels() == True:
+            return """label{i}.style("stroke-width", 0.2 / d3.event.scale);
+      label{i}.style("font-size", labelSize(10, d3.event.scale)  + "pt");\n""".format(i = self.index)
+        else:
+            return ""   
+    
+    def getStyle(self):
+        """Convert the label settings to CSS3"""
+        if self.hasLabels() == True:
+            return """.label{i}{b} 
     pointer-events: none; 
     {fill}
     {fontFamily}
@@ -72,6 +127,7 @@ class labeling:
     {textShadow}
 {e}""".format(              
            b = "{",
+           i = self.index,
            fill = self.getFill(),
            fontFamily = self.getFontFamily(),
            fontSize = self.getFontSize(),
@@ -87,6 +143,9 @@ class labeling:
            textShadow = self.getTextShadow(),
            e = "}"
            )
+        
+        else:
+            return ""
 
 
     def getFill(self): 
@@ -295,4 +354,4 @@ class labeling:
                               
             output.append(";/n")
         
-        return output.join("")        
+        return "".join(output)        

@@ -6,8 +6,8 @@ from PyQt4.QtCore import QVariant, Qt
 
 from logger import log
 
-class symbols(list):
-    """Symbols list. Add only items from the sybmol class"""
+class layerSymbols(list):
+    """List of symbols within a particular layer. Add only items from the symbol class"""
     
     def __init__(self):
         """Constructor. Nothing special here"""
@@ -24,7 +24,7 @@ class symbols(list):
         average = sum(items) / float(len(items)) 
         return round(average, 4)
         
-class singleSymbol:
+class singleSymbol(object):
     """Single symbol.Base class for tracking symbology within a layer"""
     
     def __init__(self, geoType, sym, css, trans):

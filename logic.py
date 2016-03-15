@@ -60,6 +60,7 @@ class model:
         self.selectedPopupPosition = 0
         self.panZoom = False
         self.extraVectors = False
+        self.showLabels = False
         self.osHelp = osHelper()
         self.hasViz = False 
         self.charts = [] 
@@ -283,7 +284,7 @@ class model:
 
         self.__logger.info("setSingleSymbol")
         geoType = layer.geometryType()
-        syms = symbols()
+        syms = layerSymbols()
         cssstub = self.getLayerObjectName(index)
         
         css = cssstub + "r0"
@@ -299,7 +300,7 @@ class model:
         field = renderer.classAttribute()
         geoType = layer.geometryType()
         cssstub = self.getLayerObjectName(index)
-        syms = symbols()
+        syms = layerSymbols()
         
         fieldType = "String"
         fields = layer.pendingFields()
@@ -322,7 +323,7 @@ class model:
         field = renderer.classAttribute()
         geoType = layer.geometryType()
         cssstub = self.getLayerObjectName(index)
-        syms = symbols()
+        syms = layerSymbols()
         
         for i, r in enumerate(renderer.ranges()):
             css = cssstub + "r" + str(i)
@@ -361,18 +362,25 @@ class model:
         style = "#mapSvg{{background-color: {0};}}\n"
         return style.format(self.iface.mapCanvas().canvasColor().name())
         
-    def writeCss(self, i, uid, syms):
+    def writeCss(self, uid, symbols, labels):
         """Create/append CSS file for symbology"""
         n = self.getDestCssFile(uid)
         f = open(n, "a")
         try:
             # write out the background color on the first iteration through the outer loop
-            if i == 0:
-                f.write(self.getCanvasStyle())
+            f.write(self.getCanvasStyle())
+            
             # write out all the symbols associated with the layer
-            if syms is not None:
-                for sym in syms:
-                    f.write(sym.getStyle() + "\n");
+            if symbols is not None:
+                for symbol in symbols:
+                    f.write(symbol.getStyle() + "\n")
+                    
+            # write out the label styles
+            if labels is not None:
+                for label in labels:
+                    if label.hasLabels() == True:
+                        f.write(label.getStyle() + "\n")
+                        
         except Exception as e:
             # don't leave open files 
             self.__logger.error("Exception\r\n" + traceback.format_exc(None))
@@ -660,7 +668,7 @@ class model:
                                  (self.selectedPopupPosition == 1), 
                                  self.legend, self.panZoom, self.selectedLegendPosition,
                                  self.selectedVizChart, self.__ranges, self.vizLabels,
-                                 self.vizHeight, self.vizWidth) 
+                                 self.vizHeight, self.vizWidth, self.showLabels) 
             # Initialise bounding box for projection with full 
             bbox = bound()
 
@@ -672,8 +680,14 @@ class model:
             tick+=1
             progress.setValue(tick)
             
-            # Get layers in correct order
+            # Get QgsVectorLayers in correct order
             layers = self.getLayersForOutput()
+            
+            # List for all QgsVectorLayers symbology
+            symbols = []
+            
+            # List for all QgsVectorLayers label styles
+            labels = [] 
 
             for i, vect in enumerate(layers):     
                 self.__logger.info("EXPORT " + vect.name)   
@@ -702,12 +716,12 @@ class model:
                 tick+=1
                 progress.setValue(tick)
                 
-                # Read colors
+                # Read colors from the QgsVectorLayer
                 syms = self.setSymbology(renderer, destLayer, vect.transparency, i)
                 tick+=1
                 progress.setValue(tick)
             
-                # Write colors
+                # Write color column to the QgsVectorLayer
                 self.writeSymbology(destLayer, syms)
                 tick+=1
                 progress.setValue(tick)
@@ -715,19 +729,20 @@ class model:
                 # Close the shapefile
                 del destLayer
                 
-                # Write CSS file
-                self.writeCss(i, uid, syms)  
-                tick+=1
-                progress.setValue(tick)
-                          
-
                 # Determine the attributes to preserve from the shapefile
                 # Limited to color, id and label fields
                 # Popup attributes are preserved in a CSV file                
                 preserveAttributes = [self.__colorField]
-                if vect.labels.hasLabels() == True:
-                    preserveAttributes.append(vect.labels.fieldName)
-                    
+                
+                # Get any labels for the QgsVectorLayer
+                label = labeling(vect.layer, i)
+                if self.showLabels == True and label.hasLabels() == True:
+                    labels.append(label)
+                    preserveAttributes.append(label.fieldName)
+                
+                tick+=1
+                progress.setValue(tick)                          
+            
                 # Only output the id field for the main layer
                 idAttribute = ""
                 if vect.main == True:
@@ -746,6 +761,9 @@ class model:
                 hasViz = vect.main and self.hasViz
                 outlineWidth = syms.getAvergageOutlineWidth()     
                 
+                # Store the QgsVectorLayer symbols in a single list now that the the average outline width has been calculated
+                symbols.extend(syms)
+                
                 tick+=1
                 progress.setValue(tick)         
                 
@@ -758,11 +776,13 @@ class model:
                 tick+=1
                 progress.setValue(tick)              
                   
+            # Write symbol styles
+            self.writeCss(uid, symbols, labels)  
             
             # Alter the index file
             n = self.getDestIndexFile(uid)
             
-            self.selectedFormat.writeIndexFile(n, outVars, bbox, self.selectedProjection, self.__selectedFields)
+            self.selectedFormat.writeIndexFile(n, outVars, bbox, self.selectedProjection, self.__selectedFields, labels)
             tick+=1
             progress.setValue(tick)
             
@@ -803,8 +823,6 @@ class vector:
         self.fields = []
         self.vizFields = []
         self.defaultId = ""        
-        
-        self.labels = labeling(layer)
 
         
         self.isVisible = iface.legendInterface().isLayerVisible(layer) 

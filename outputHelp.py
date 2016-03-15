@@ -7,13 +7,14 @@ from qgis.core import *
 from osHelp import osHelper
 from logger import log
 from gisWrapper import *
+from labelHelper import *
 
 class outputVars(object):
-    """Struct required to parse the html required for the d3 map"""
+    """Struct to pass variables from the model to functions which generate the html for the d3 map"""
     
     def __init__(self, main, title, width, height, hasHeader, idField, extTip, 
                  hasLegend, allowZoom, legendPosition, chartType, ranges, labels,
-                 vizHeight, vizWidth):
+                 vizHeight, vizWidth, showLabels):
         """Constructor"""
         self.mainLayer = main
         self.title = title
@@ -32,6 +33,7 @@ class outputVars(object):
         self.vizLabels = labels   
         self.vizHeight = vizHeight 
         self.vizWidth = vizWidth 
+        self.showLabels = showLabels
         
 
 class outFormat(object):
@@ -95,17 +97,22 @@ class outFormat(object):
         else:
             return ""
         
-    def createSvgPaths(self):
+    def createSvgPaths(self, labels):
         """Create the Svg group and path elements required by the layers"""
         paths = []
         template = "    var vectors{index} = vectors.append(\"g\");\n    var vector{index} = void 0;\n"
         i = 0
-        for o in self.outVars.outputLayers:
-            path = template.format(
-                index = i
-            )
+        for i, o in enumerate(self.outVars.outputLayers):
+            path = template.format( index = i )
             paths.append(path)
-            i += 1
+        # TODO: Group labels with vector layer, not on top of all layers
+        if self.outVars.showLabels == True:
+            labelTemplate = """    var label{index} = void 0;"""
+            for l in labels:
+                if l.hasLabels() == True:
+                    path = labelTemplate.format( index = l.index )
+                    paths.append(path)
+            
     
         return "".join(paths)
     
@@ -192,22 +199,45 @@ class outFormat(object):
                 
         return val
      
-    def createZoomFunction(self, selectedProjection):
+    def createZoomFunction(self, selectedProjection, labels):
         """Create the Javascript zoom helper functions"""       
+        labelSize = """    function labelSize(orig, scale){
+      var size = orig / (Math.ceil(scale/2));
+      return (size > 0) ? size : 1;
+    }\n\n"""
         
-        template = """    // Zoom/pan 
+        template = """<%labelsize%>
+    // Zoom/pan 
     function onZoom() {
       <%hidetip%>
       <%vectorscaling%>
+      <%labelscaling%>
     }"""
-        
+     
         if self.outVars.allowZoom == True:
+            if self.tipInUse() == True:
+                template = template.replace("<%hidetip%>", "hideTip();")
+            else:
+                template =  template.replace("<%hidetip%>", "")
+                
             template = template.replace("<%vectorscaling%>", selectedProjection.zoomScalingScript(self.outVars.outputLayers))
             
-            if self.tipInUse() == True:
-                return template.replace("<%hidetip%>", "hideTip();")
+            if self.outVars.showLabels == True:
+                template = template.replace("<%labelsize%>", labelSize)
+                
+                l = []
+                
+                for label in labels:
+                    if label.hasLabels() == True:
+                        l.append(label.getZoomScript()) 
+                       
+                template = template.replace("<%labelscaling%>", "".join(l))  
+                       
             else:
-                return template.replace("<%hidetip%>", "")
+                template = template.replace("<%labelsize%>", "")
+                template = template.replace("<%labelscaling%>", "")
+            
+            return template
         else:
             return ""
     
@@ -284,8 +314,7 @@ class outFormat(object):
         .attr("class", function (d) { return d.properties.d3Css; })"""
         tip = """\n        .on("click", function (d) { return showTip(d.id); });\n\n"""
         
-        i = 0
-        for o in self.outVars.outputLayers:
+        for i, o in enumerate(self.outVars.outputLayers):
             script = template.format(
                 index = i
             )
@@ -299,8 +328,31 @@ class outFormat(object):
             else:
                 scripts.append(";\n\n")
                 
-            i += 1
     
+        return "".join(scripts)
+    
+    def createLabelFeatures(self, labels):
+        """Create the label features"""
+        scripts = []
+        template = """      label{index} = vectors{index}.selectAll("text").data(object{index}.features);
+      label{index}.enter()
+        .append("text")
+        .attr("x", function(d){b} return path.centroid(d)[0]; {e})
+        .attr("y", function(d){b} return path.centroid(d)[1]; {e})
+        .text(function(d) {b} return d.properties.{field}; {e})
+        .attr("class", "label{index}");\n"""
+        
+        if self.outVars.showLabels == True:
+            for l in labels:
+                if l.hasLabels() == True:
+                    script = template.format(
+                                             b = "{",
+                                             e = "}",
+                                             index = l.index,
+                                             field = l.fieldName
+                                             )
+                    scripts.append(script)
+        
         return "".join(scripts)
         
     def createDataStore(self):
@@ -354,7 +406,7 @@ class outFormat(object):
         else:
             return ""       
  
-    def writeIndexFile(self, path, outVars, bound, selectedProjection, selectedFields):
+    def writeIndexFile(self, path, outVars, bound, selectedProjection, selectedFields, labels):
         """Read and write the index html file"""
         self.outVars = outVars
         
@@ -373,7 +425,7 @@ class outFormat(object):
         outHtml = outHtml.replace("<%width%>", str(self.outVars.width))
         outHtml = outHtml.replace("<%height%>", str(self.outVars.height))
         outHtml = outHtml.replace("<%projection%>", selectedProjection.toScript(bound, self.outVars.width, self.outVars.height))
-        outHtml = outHtml.replace("<%vectorpaths%>", self.createSvgPaths())
+        outHtml = outHtml.replace("<%vectorpaths%>", self.createSvgPaths(labels))
         outHtml = outHtml.replace("<%attachzoom%>", self.createZoom(selectedProjection))
         outHtml = outHtml.replace("<%hidetip%>", self.hideTip())
         outHtml = outHtml.replace("<%attachtip%>", self.createTipFunction())
@@ -382,11 +434,12 @@ class outFormat(object):
         outHtml = outHtml.replace("<%polygonobjects%>", self.createPolygonObjects())
         outHtml = outHtml.replace("<%refineprojection%>", selectedProjection.refineProjectionScript(self.createMainObject()))
         outHtml = outHtml.replace("<%vectorfeatures%>", self.createVectorFeatures())
+        outHtml = outHtml.replace("<%labelfeatures%>", self.createLabelFeatures(labels))
         outHtml = outHtml.replace("<%datastore%>", self.createDataStore())
         outHtml = outHtml.replace("<%addlegend%>", self.createLegend())
         outHtml = outHtml.replace("<%tipfunctions%>", self.createTipHelpers())
         outHtml = outHtml.replace("<%chartfunction%>", self.createChartFunction(self.outVars.vizWidth, self.outVars.vizHeight))
-        outHtml = outHtml.replace("<%zoomfunction%>", self.createZoomFunction(selectedProjection))
+        outHtml = outHtml.replace("<%zoomfunction%>", self.createZoomFunction(selectedProjection, labels))
         
         # overwrite the file with new contents
         f = codecs.open(path, "w", encoding="utf-8")
@@ -451,7 +504,6 @@ class geoJson(outFormat):
         if idAttribute != "":
             preserveAttributes.append(idAttribute)
         
-        #TODO Reference to layer
         self.__qgis.removeFields(qgisLayer, preserveAttributes)
         
         # Calculate precision from selected steradian / 15     
@@ -512,6 +564,8 @@ class geoJson(outFormat):
             i += 1
     
         return "".join(scripts)
+
+        
     
     
 class outputLayer:
