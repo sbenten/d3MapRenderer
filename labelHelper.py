@@ -149,7 +149,7 @@ class labeling(object):
 
 
     def getFill(self): 
-        template = "fill: rgba({r},{g},{b},{a});/n"
+        template = "fill: rgba({r},{g},{b},{a});"
         
         return template.format(
                                r = str(self.textColorR),
@@ -159,7 +159,7 @@ class labeling(object):
                                )
         
     def getFillOpacity(self):
-        template = "fill-opacity: {0};/n"
+        template = "fill-opacity: {0};"
         
         return template.format(str(self.getOpacity(self.textTransparency)))
         
@@ -175,7 +175,7 @@ class labeling(object):
         return str(alpha * colorTrans)
     
     def getFontFamily(self):
-        template = "font-family: {0};/n"
+        template = "font-family: {0};"
         
         if " " in self.fontFamily:
             self.fontFamily = "'{0}'".format(self.fontFamily)
@@ -183,35 +183,35 @@ class labeling(object):
         return template.format(self.fontFamily)
     
     def getFontSize(self):
-        template = "font-size: {0}pt;/n"
+        template = "font-size: {0}pt;"
         
         return template.format(str(self.fontSize))
     
     def getFontWeight(self):
         if self.fontBold == True:
-            return "font-weight: bold;/n"
+            return "font-weight: bold;"
         else:
-            return "font-weight: normal;/n"    
+            return "font-weight: normal;"    
 
     def getFontStyle(self):
         if self.fontItalic == True:
-            return "font-style: italic;/n"
+            return "font-style: italic;"
         else:
-            return "font-style: normal;/n"  
+            return "font-style: normal;"  
         
     def getTextDecoraction(self):
         if self.fontStrikeout == True or self.fontUnderline == True:
-            template = "text-decoration:{0}{1};/n";
+            template = "text-decoration:{0}{1};";
             underline = " underline" if self.fontUnderline == True  else ""
             strikeout = " line-through" if self.fontStrikeout == True  else ""
             
             return template.format(underline, strikeout)
         
         else:
-            return "text-decoration:{0}{1};/n"
+            return "text-decoration:{0}{1};"
         
     def getStroke(self): 
-        template = "stroke: rgba({r},{g},{b},{a});/n"
+        template = "stroke: rgba({r},{g},{b},{a});"
         
         return template.format(
                                r = str(self.textColorR),
@@ -223,10 +223,10 @@ class labeling(object):
     def getStrokeWidth(self):
         """At present QGIS does not allow the text outline to have a border
         Just set to 0.1 for now in order for advaned users to style it separately"""
-        return "stroke-width = 0.1;/n"    
+        return "stroke-width = 0.1;"    
         
     def getStrokeOpacity(self):
-        template = "stroke-opacity: {0};/n"
+        template = "stroke-opacity: {0};"
         
         return template.format(str(self.getOpacity(self.textTransparency)))        
 
@@ -237,7 +237,7 @@ class labeling(object):
         0 1 2
         3 4 5
         6 7 8"""
-        template = "text-anchor: {0};/n"
+        template = "text-anchor: {0};"
         
         if self.placement == 1:            
             position = ["start", "middle", "end", "start", "middle", "end", "start", "middle", "end"]
@@ -254,7 +254,7 @@ class labeling(object):
         0 1 2
         3 4 5
         6 7 8"""
-        template = "alignment-baseline: {0};/n"
+        template = "alignment-baseline: {0};"
         if self.placement == 1:
             position = ["alphabetic", "alphabetic", "alphabetic", "middle", "middle", "middle", "hanging", "hanging", "hanging"]
             
@@ -352,6 +352,6 @@ class labeling(object):
                 
           
                               
-            output.append(";/n")
+            output.append(";")
         
         return "".join(output)        
