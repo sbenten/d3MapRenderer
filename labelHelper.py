@@ -1,6 +1,6 @@
-import sys
 from qgis.core import *
 from logger import log
+from d3MapRenderer.projections import orthographic
 
 class labeling(object):
     """Helper class for labeling"""  
@@ -28,26 +28,29 @@ class labeling(object):
         self.fontStrikeout = self.getBooleanProperty("labeling/fontStrikeout")
         self.fontUnderline = self.getBooleanProperty("labeling/fontUnderline")  
         self.fontSize = float(self.layer.customProperty("labeling/fontSize", "10")) 
+        """At present QGIS does not allow the text outline to have a border
+        Just set to 0.1 for now in order for advanced users to style it separately"""
+        self.strokeWidth = 0.1
   
         self.textColorA = int(self.layer.customProperty("labeling/textColorA", "255"))
         self.textColorB = int(self.layer.customProperty("labeling/textColorB", "0"))
         self.textColorG = int(self.layer.customProperty("labeling/textColorG", "0"))
         self.textColorR = int(self.layer.customProperty("labeling/textColorR", "0"))
-        self.textTransparency = int(self.layer.customProperty("labeling/textTransp", "0")) 
+        self.textTransparency = float(self.layer.customProperty("labeling/textTransp", "0")) 
 
         self.bufferDraw = self.getBooleanProperty("labeling/bufferDraw")
         self.bufferColorA = int(self.layer.customProperty("labeling/bufferColorA", "255"))
         self.bufferColorB = int(self.layer.customProperty("labeling/bufferColorB", "255"))
         self.bufferColorG = int(self.layer.customProperty("labeling/bufferColorG", "255"))
         self.bufferColorR = int(self.layer.customProperty("labeling/bufferColorR", "255"))
-        self.bufferTransparency = int(self.layer.customProperty("labeling/bufferTransp", "0"))
+        self.bufferTransparency = float(self.layer.customProperty("labeling/bufferTransp", "0"))
         self.bufferSize = float(self.layer.customProperty("labeling/bufferSize", "1"))
 
         self.shadowDraw = self.getBooleanProperty("labeling/shadowDraw")
         self.shadowColorB = int(self.layer.customProperty("labeling/shadowColorB", "0"))
         self.shadowColorG = int(self.layer.customProperty("labeling/shadowColorG", "0"))
         self.shadowColorR = int(self.layer.customProperty("labeling/shadowColorR", "0"))
-        self.shadowTransparency = int(self.layer.customProperty("labeling/shadowTransparency", "30"))
+        self.shadowTransparency = float(self.layer.customProperty("labeling/shadowTransparency", "30"))
         self.shadowOffsetAngle = int(self.layer.customProperty("labeling/shadowOffsetAngle", "135"))
         self.shadowOffsetDist = int(self.layer.customProperty("labeling/shadowOffsetDist", "1"))
         self.shadowRadius = float(self.layer.customProperty("labeling/shadowRadius", "1.5"))
@@ -79,33 +82,7 @@ class labeling(object):
         """Does the layer have labels enabled and a field specified?
         At the moment expressions are not supported"""
         return self.enabled == True and self.fieldName != u"" and self.isExpression == False
-    
-    def getObjectScript(self):
-        """Return the Javascript for creating the SVG text elements"""
-        if self.hasLabels() == True:
-            template = """      label{i} = vectors{i}.selectAll("text").data(object{i}.features);
-      label{i}.enter()
-        .append("text")
-        .attr("x", function(d) {b} return path.centroid(d)[0]; {e})
-        .attr("y", function(d) {b} return path.centroid(d)[1]; {e})
-        .text(function(d) {b} return d.properties.{fieldName}; {e}})
-        .attr("class", "label{i}");""".format(
-                                              b = "{",
-                                              i = self.index,
-                                              fieldName = self.fieldName,
-                                              e = "}")
-            '''.attr("x", function (d) { return path.centroid(d)[0] > -1 ? 6 : -6;  })'''
-            
-        else:
-            return ""
-        
-    def getZoomScript(self):
-        """Return the script to resize SVG text elements"""
-        if self.hasLabels() == True:
-            return """label{i}.style("stroke-width", 0.2 / d3.event.scale);
-      label{i}.style("font-size", labelSize(10, d3.event.scale)  + "pt");\n""".format(i = self.index)
-        else:
-            return ""   
+           
     
     def getStyle(self):
         """Convert the label settings to CSS3"""
@@ -208,7 +185,7 @@ class labeling(object):
             return template.format(underline, strikeout)
         
         else:
-            return "text-decoration:{0}{1};"
+            return ""
         
     def getStroke(self): 
         template = "stroke: rgba({r},{g},{b},{a});"
@@ -221,9 +198,8 @@ class labeling(object):
                                )
         
     def getStrokeWidth(self):
-        """At present QGIS does not allow the text outline to have a border
-        Just set to 0.1 for now in order for advaned users to style it separately"""
-        return "stroke-width = 0.1;"    
+        """Get the text outline border"""
+        return "stroke-width = {0};".format(str(self.strokeWidth))  
         
     def getStrokeOpacity(self):
         template = "stroke-opacity: {0};"
@@ -263,6 +239,10 @@ class labeling(object):
             return template.format("middle") 
         
     def getTextShadow(self):
+        ''' TODO: Text buffer style not correct'''
+        ''' TODO: Shadow direction not correct '''
+        
+        
         """Get a text shadow to display any buffer and drop shadow implemented in the label
         NOTE: QGIS settings do not directly map onto CSS attributes""" 
         output = []

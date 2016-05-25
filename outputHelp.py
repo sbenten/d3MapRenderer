@@ -199,6 +199,22 @@ class outFormat(object):
                 
         return val
      
+    def createSafeCentroidFunction(self, selectedProjection):
+        """Create the JavaScript centroid helper function"""       
+     
+        if self.outVars.allowZoom == True and isinstance(selectedProjection, orthographic) == True:
+            return """    function getSafeCentroid(d) {
+      var centroid = path.centroid(d);
+      var clip_test_path = d3.geo.path().projection(projection);
+      var clipped =  typeof(clip_test_path({ type: "MultiPoint", coordinates: [centroid] })) == "undefined";
+      return clipped ? [null, null] : centroid; 
+    }
+"""
+
+        else:
+            return ""
+        
+     
     def createZoomFunction(self, selectedProjection, labels):
         """Create the Javascript zoom helper functions"""       
         labelSize = """    function labelSize(orig, scale){
@@ -229,9 +245,12 @@ class outFormat(object):
                 
                 for label in labels:
                     if label.hasLabels() == True:
-                        l.append(label.getZoomScript()) 
-                       
-                template = template.replace("<%labelscaling%>", "".join(l))  
+                        l.append(selectedProjection.zoomLabelScript(label.index, label.strokeWidth, label.fontSize)) 
+                
+                if len(l) > 0:     
+                    template = template.replace("<%labelscaling%>", "".join(l))
+                else:
+                    template = template.replace("<%labelscaling%>", "")  
                        
             else:
                 template = template.replace("<%labelsize%>", "")
@@ -331,27 +350,14 @@ class outFormat(object):
     
         return "".join(scripts)
     
-    def createLabelFeatures(self, labels):
+    def createLabelFeatures(self, selectedProjection, labels):
         """Create the label features"""
         scripts = []
-        template = """      label{index} = vectors{index}.selectAll("text").data(object{index}.features);
-      label{index}.enter()
-        .append("text")
-        .attr("x", function(d){b} return path.centroid(d)[0]; {e})
-        .attr("y", function(d){b} return path.centroid(d)[1]; {e})
-        .text(function(d) {b} return d.properties.{field}; {e})
-        .attr("class", "label{index}");\n"""
         
         if self.outVars.showLabels == True:
             for l in labels:
                 if l.hasLabels() == True:
-                    script = template.format(
-                                             b = "{",
-                                             e = "}",
-                                             index = l.index,
-                                             field = l.fieldName
-                                             )
-                    scripts.append(script)
+                    scripts.append(selectedProjection.getLabelObjectScript(l.index, l.fieldName))
         
         return "".join(scripts)
         
@@ -434,11 +440,12 @@ class outFormat(object):
         outHtml = outHtml.replace("<%polygonobjects%>", self.createPolygonObjects())
         outHtml = outHtml.replace("<%refineprojection%>", selectedProjection.refineProjectionScript(self.createMainObject()))
         outHtml = outHtml.replace("<%vectorfeatures%>", self.createVectorFeatures())
-        outHtml = outHtml.replace("<%labelfeatures%>", self.createLabelFeatures(labels))
+        outHtml = outHtml.replace("<%labelfeatures%>", self.createLabelFeatures(selectedProjection, labels))
         outHtml = outHtml.replace("<%datastore%>", self.createDataStore())
         outHtml = outHtml.replace("<%addlegend%>", self.createLegend())
         outHtml = outHtml.replace("<%tipfunctions%>", self.createTipHelpers())
         outHtml = outHtml.replace("<%chartfunction%>", self.createChartFunction(self.outVars.vizWidth, self.outVars.vizHeight))
+        outHtml = outHtml.replace("<%safecentroidfunction%>", self.createSafeCentroidFunction(selectedProjection))
         outHtml = outHtml.replace("<%zoomfunction%>", self.createZoomFunction(selectedProjection, labels))
         
         # overwrite the file with new contents

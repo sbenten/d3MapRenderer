@@ -743,7 +743,6 @@ class d3MapRenderer:
         self.dlg.popupPositionComboBox.currentIndexChanged.connect(self.changedPopupPositionComboBox)
         self.dlg.popupTreeWidget.itemClicked.connect(self.changedPopupItems)
         # viz tab
-        # TODO: Main layer changed does not refresh viz fields
         self.dlg.incVizCheckBox.stateChanged.connect(self.changedVizCheckBox)
         self.dlg.vizTypeComboBox.currentIndexChanged.connect(self.changedVizTypeComboBox)
         self.dlg.vizWidthEdit.textChanged.connect(self.changedVizWidth)

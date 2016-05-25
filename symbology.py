@@ -1,6 +1,3 @@
-import sys
-import traceback
-
 from qgis.core import *
 from PyQt4.QtCore import QVariant, Qt
 

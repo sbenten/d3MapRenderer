@@ -2,6 +2,7 @@
 
 import math
 import sys
+from numpy.doc import indexing
 
 class projection(object):
     """Base class for a projection object"""
@@ -96,6 +97,29 @@ class projection(object):
                 scripts.append(script)
     
         return "".join(scripts)  
+    
+    def zoomLabelScript(self, index, strokeWidth, fontSize):
+        """Return the script to resize SVG text elements"""
+        return """label{i}.style("stroke-width", {sw} / d3.event.scale);
+      label{i}.style("font-size", labelSize({ls}, d3.event.scale)  + "pt");\n""".format(
+                                                                                        i = index,
+                                                                                        sw = strokeWidth,
+                                                                                        ls = fontSize)
+      
+      
+    def getLabelObjectScript(self, index, fieldName):
+        """Return the Javascript for creating the SVG text elements"""
+        return """      label{i} = vectors{i}.selectAll("text").data(object{i}.features);
+          label{i}.enter()
+            .append("text")
+            .attr("x", function(d) {b} return path.centroid(d)[0]; {e})
+            .attr("y", function(d) {b} return path.centroid(d)[1]; {e})
+            .text(function(d) {b} return d.properties.{f}; {e})
+            .attr("class", "label{i}");\n""".format(
+                                                  b = "{",
+                                                  i = index,
+                                                  f = fieldName,
+                                                  e = "}")
         
 """ TODO: Extra projections
 # List of projections to support in the future...
@@ -591,8 +615,6 @@ class nellHammer(projection):
     
 class orthographic(projection):
 
-    # TODO: Ortrhographic labels do not refresh on rotation
-
     def __init__(self):
         self.name = u"Orthographic"
         self.d3Name = u"d3.geo.orthographic"
@@ -654,7 +676,45 @@ class orthographic(projection):
     def zoomScalingScript(self, outputLayers):
         """Orthographic version of the scaling script"""
         return """svg.selectAll("path").attr("d", path);"""
-
+    
+    def zoomLabelScript(self, index, strokeWidth, fontSize):
+        """Orthographic projection requires no resizing of labels, 
+        but does require labels to be shown / hidden depending on the rotation of the globe"""
+                
+        return """label{i}.each(function(d, i) {b}
+        var centroid = getSafeCentroid(d);    
+        var label = d3.select(label{i}[0][i]);            
+        //console.log(label.text(), i, clipped, path.centroid(d));            
+        if (centroid[0] == null) {b}
+          label.style("display", "none");
+          label.attr("x", null); 
+          label.attr("y", null);
+        {e} else {b}
+          label.style("display", null);
+          label.attr("x", centroid[0]); 
+          label.attr("y", centroid[1]);
+        {e}
+      {e});\n""".format(
+                      i = index,
+                      b = "{",
+                      e = "}")
+      
+    def getLabelObjectScript(self, index, fieldName):
+        """Othrographic version to  return the Javascript for creating the SVG text elements
+        Orthographic projections may have labels clipped from view"""
+                
+        return """      label{i} = vectors{i}.selectAll("text").data(object{i}.features);
+      label{i}.enter()
+        .append("text")
+        .attr("x", function(d){b} return getSafeCentroid(d)[0]; {e})
+        .attr("y", function(d){b} return getSafeCentroid(d)[1]; {e})
+        .style("display", function(d){b} return getSafeCentroid(d)[1] == null ? "none": null; {e})
+        .text(function(d) {b} return d.properties.{f}; {e})
+        .attr("class", "label{i}");\n""".format(
+                                                  b = "{",
+                                                  i = index,
+                                                  f = fieldName,
+                                                  e = "}")
 
 class patterson(projection):
 
