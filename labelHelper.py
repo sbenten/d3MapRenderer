@@ -146,10 +146,8 @@ class labeling(object):
         return (100 - transparency) / 100  
         
     def getAlphaOpacity(self, alpha, transparency):
-        """Get the opacity based on the color alpha and a transparency percentage"""
-        colorTrans = float(transparency)/255
-        
-        return str(alpha * colorTrans)
+        """Get the opacity based on the color alpha and a transparency percentage"""       
+        return str(alpha * self.getOpacity(transparency))
     
     def getFontFamily(self):
         template = "font-family: {0};"
@@ -253,21 +251,52 @@ class labeling(object):
                         
             if self.bufferDraw == True:
                 output.append(template.format(
-                                              x = "0",
-                                              y = "0",
-                                              blur = str(self.bufferSize * 3),
+                                              x = "1",
+                                              y = "1",
+                                              blur = str(self.bufferSize),
                                               r = self.bufferColorR,
                                               g = self.bufferColorG,
                                               b = self.bufferColorB,
                                               a = self.getAlphaOpacity(255, self.bufferTransparency)))
-            
+                output.append(", ") 
+                output.append(template.format(
+                                              x = "-1",
+                                              y = "1",
+                                              blur = str(self.bufferSize),
+                                              r = self.bufferColorR,
+                                              g = self.bufferColorG,
+                                              b = self.bufferColorB,
+                                              a = self.getAlphaOpacity(255, self.bufferTransparency)))
+                output.append(", ") 
+                output.append(template.format(
+                                              x = "-1",
+                                              y = "-1",
+                                              blur = str(self.bufferSize),
+                                              r = self.bufferColorR,
+                                              g = self.bufferColorG,
+                                              b = self.bufferColorB,
+                                              a = self.getAlphaOpacity(255, self.bufferTransparency)))
+                output.append(", ") 
+                output.append(template.format(
+                                              x = "1",
+                                              y = "-1",
+                                              blur = str(self.bufferSize),
+                                              r = self.bufferColorR,
+                                              g = self.bufferColorG,
+                                              b = self.bufferColorB,
+                                              a = self.getAlphaOpacity(255, self.bufferTransparency)))
+                                
             if self.shadowDraw == True:
                 if self.bufferDraw == True:
                     #text-shadow attributes are CSV
                     output.append(", ")    
                 #CSS and QGIS differ on the starting angle. 
+                #QGIS stores anglkes as 0 through 180 with negative values for the LHS of the compass
+                angle = (360 +self.shadowOffsetAngle) if self.shadowOffsetAngle < 0 else self.shadowOffsetAngle
+                
                 #CSS is +90 degrees, starting at East on the compass
-                angle = self.shadowOffsetAngle + 90 - 360 if self.shadowOffsetAngle + 90 > 359 else self.shadowOffsetAngle + 90
+                angle = angle -90 if (angle - 90) > -1 else 360 + (angle - 90)
+                
                 posX = 2
                 posY = 0
                 if angle <= 10:
