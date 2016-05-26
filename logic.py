@@ -283,7 +283,8 @@ class model:
         """Read the symbology for single symbol layers"""      
 
         self.__logger.info("setSingleSymbol")
-        geoType = layer.geometryType()
+        geoType = layer.geometryType()       
+        
         syms = layerSymbols()
         cssstub = self.getLayerObjectName(index)
         
