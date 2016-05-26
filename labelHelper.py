@@ -237,10 +237,6 @@ class labeling(object):
             return template.format("middle") 
         
     def getTextShadow(self):
-        ''' TODO: Text buffer style not correct'''
-        ''' TODO: Shadow direction not correct '''
-        
-        
         """Get a text shadow to display any buffer and drop shadow implemented in the label
         NOTE: QGIS settings do not directly map onto CSS attributes""" 
         output = []
