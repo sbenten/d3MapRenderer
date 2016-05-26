@@ -67,47 +67,51 @@ class singleSymbol(object):
         
         t = type(sym)
         
-        # different symbols have different attributes
-        if t is QgsLineSymbolV2:
-            outlineWidth = sym.width()
-            outlineColor = sym.color().name()
-            outlineTrans = sym.color().alpha()
-        elif t is QgsMarkerSymbolV2:
-            outlineWidth = sym.symbolLayer(0).outlineWidth()
-            outlineColor = sym.symbolLayer(0).outlineColor().name()
-            outlineStyle = sym.symbolLayer(0).outlineStyle()
-            outlineTrans = sym.symbolLayer(0).outlineColor().alpha()
-        elif t is QgsFillSymbolV2:
-            outlineWidth = sym.symbolLayer(0).borderWidth()
-            outlineColor = sym.symbolLayer(0).borderColor().name()
-            outlineStyle = sym.symbolLayer(0).borderStyle()
-            outlineTrans = sym.symbolLayer(0).borderColor().alpha()   
-            brushStyle =  sym.symbolLayer(0).brushStyle()        
-        else: 
-            # no idea what the symbol is, thrash around trying to guess the attributes            
-            if sym.symbolLayer(0) is not None:
-                try:
-                    outlineWidth = sym.symbolLayer(0).borderWidth()
-                    outlineColor = sym.symbolLayer(0).borderColor().name()
-                    outlineStyle = sym.symbolLayer(0).borderStyle()
-                    outlineTrans = sym.symbolLayer(0).borderColor().alpha()
-                except AttributeError:
-                    try:
-                        outlineWidth = sym.symbolLayer(0).outlineWidth()
-                        outlineColor = sym.symbolLayer(0).outlineColor().name()
-                        outlineStyle = sym.symbolLayer(0).outlineStyle()
-                        outlineTrans = sym.symbolLayer(0).outlineColor().alpha()
-                    except AttributeError:
-                        outlineWidth = sym.width()
-                        outlineColor = sym.color().name()
-                        outlineStyle = sym.penStyle()
-                        outlineTrans = sym.color().alpha()
-            else:
+        try:
+        
+            # different symbols have different attributes
+            if t is QgsLineSymbolV2:
                 outlineWidth = sym.width()
                 outlineColor = sym.color().name()
-                outlineStyle = sym.penStyle()
                 outlineTrans = sym.color().alpha()
-    
+            elif t is QgsMarkerSymbolV2:
+                outlineWidth = sym.symbolLayer(0).outlineWidth()
+                outlineColor = sym.symbolLayer(0).outlineColor().name()
+                outlineStyle = sym.symbolLayer(0).outlineStyle()
+                outlineTrans = sym.symbolLayer(0).outlineColor().alpha()
+            elif t is QgsFillSymbolV2:
+                outlineWidth = sym.symbolLayer(0).borderWidth()
+                outlineColor = sym.symbolLayer(0).borderColor().name()
+                outlineStyle = sym.symbolLayer(0).borderStyle()
+                outlineTrans = sym.symbolLayer(0).borderColor().alpha()   
+                brushStyle =  sym.symbolLayer(0).brushStyle()        
+            else: 
+                # no idea what the symbol is, thrash around trying to guess the attributes            
+                if sym.symbolLayer(0) is not None:
+                    try:
+                        outlineWidth = sym.symbolLayer(0).borderWidth()
+                        outlineColor = sym.symbolLayer(0).borderColor().name()
+                        outlineStyle = sym.symbolLayer(0).borderStyle()
+                        outlineTrans = sym.symbolLayer(0).borderColor().alpha()
+                    except AttributeError:
+                        try:
+                            outlineWidth = sym.symbolLayer(0).outlineWidth()
+                            outlineColor = sym.symbolLayer(0).outlineColor().name()
+                            outlineStyle = sym.symbolLayer(0).outlineStyle()
+                            outlineTrans = sym.symbolLayer(0).outlineColor().alpha()
+                        except AttributeError:
+                            outlineWidth = sym.width()
+                            outlineColor = sym.color().name()
+                            outlineStyle = sym.penStyle()
+                            outlineTrans = sym.color().alpha()
+                else:
+                    outlineWidth = sym.width()
+                    outlineColor = sym.color().name()
+                    outlineStyle = sym.penStyle()
+                    outlineTrans = sym.color().alpha()
+        except:
+            pass
+            
         return outlineWidth, outlineColor, outlineStyle, outlineTrans, brushStyle
         
     def getFilterExpression(self):
