@@ -214,7 +214,7 @@ class labeling(object):
         template = "text-anchor: {0};"
         
         if self.placement == 1:            
-            position = ["start", "middle", "end", "start", "middle", "end", "start", "middle", "end"]
+            position = ["end", "middle", "start", "end", "middle", "start", "end", "middle", "start"]
             
             return template.format(position[self.quadOffset])
         else:
