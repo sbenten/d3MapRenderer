@@ -30,6 +30,7 @@ class model:
         """Initialise the model"""
         self.__logger = log(self.__class__.__name__)
         self.__colorField = "d3Css"
+        self.__sizeField = "d3S"
         self.__cssFile = "color.css"
         self.__selectedFields = []  
         self.__tempVizFields = [] 
@@ -262,7 +263,7 @@ class model:
         """Get a unique folder name"""
         return time.strftime("%Y%m%d%H%M%S")          
     
-    def setSymbology(self, renderer, layer, transparency, index):
+    def getSymbology(self, renderer, layer, transparency, index):
         """Read the symbology, generate a CSS style and set against each row in the layers attribute table"""
         
         dump = renderer.dump()        
@@ -289,7 +290,7 @@ class model:
         cssstub = self.getLayerObjectName(index)
         
         css = cssstub + "r0"
-        s = singleSymbol(geoType, renderer.symbol(), css, transparency)     
+        s = singleSymbol(geoType, renderer.symbol(), index, css, transparency)     
         syms.append(s)       
 
         return syms
@@ -312,7 +313,7 @@ class model:
             
         for i, c in enumerate(renderer.categories()):
             css = cssstub + "c" + str(i)
-            s = categorizedSymbol(geoType, field, fieldType, c, css, transparency)     
+            s = categorized(geoType, field, fieldType, c, index, css, transparency)     
             syms.append(s)       
         
         return syms
@@ -328,7 +329,7 @@ class model:
         
         for i, r in enumerate(renderer.ranges()):
             css = cssstub + "r" + str(i)
-            s = graduatedSymbol(geoType, field, r, css, transparency)     
+            s = graduated(geoType, field, r, index, css, transparency)     
             syms.append(s)       
             
         return syms
@@ -353,7 +354,9 @@ class model:
                 # Loop though each feature returned from the filter
                 for feature in features:
                     index = layer.fieldNameIndex(self.__colorField)                   
-                    layer.changeAttributeValue(feature.id(), index, sym.css)
+                    layer.changeAttributeValue(feature.id(), index, sym.symbol.css)
+                    index = layer.fieldNameIndex(self.__sizeField)                   
+                    layer.changeAttributeValue(feature.id(), index, sym.symbol.size)
 
             # Commit the transaction
             layer.commitChanges()
@@ -373,8 +376,8 @@ class model:
             
             # write out all the symbols associated with the layer
             if symbols is not None:
-                for symbol in symbols:
-                    f.write(symbol.getStyle() + "\n")
+                for sym in symbols:
+                    f.write(sym.symbol.toCss() + "\n")
                     
             # write out the label styles
             if labels is not None:
@@ -437,7 +440,7 @@ class model:
             if syms is not None:
                 f.write("Width,Height,Color,Text\n");
                 for sym in syms:
-                    uCss = unicode(sym.css)
+                    uCss = unicode(sym.symbol.css)
                     uText = self.safeCsvUnicode(sym.label, False)
                     
                     f.write(template.format(uCss, uText));
@@ -518,7 +521,7 @@ class model:
         return self.osHelp.isWindows        
             
     def getSourceFolder(self):
-        """Get the plugin html source"""
+        """Get the plugin html source folder"""
         return os.path.join(os.path.dirname(os.path.realpath(__file__)), "html")
     
     def getDestFolder(self, uid):
@@ -582,10 +585,34 @@ class model:
         folder = self.getDestFolder(uid)
         return os.path.join(folder, "json")
     
-    def addColorColumn(self, layer):
-        """Add a new column to hold the color used in symbology"""
+    def getDestImgFolder(self, uid):
+        """Get the destination image file path"""
+        folder = self.getDestFolder(uid)
+        return os.path.join(folder, "img")
+    
+    def copyImgFiles(self, uid, renderers):
+        """Copy any external image files for the layer symbology to the destination folder
+        
+        :param uid: Unique identifier for the destination folder 
+        :type uid: string
+        
+        :param renderers: List of renderers associated with the layer symbology (categorised and graduated renederers will have more than one)
+        :type renderers: list[d3MapRenderer.symbology.singleSymbol]
+        
+        """
+        
+        for renderer in renderers:
+            if renderer.symbol.hasImage() == True:
+                head, tail = os.path.split(renderer.symbol.path)
+                shutil.copyfile(renderer.symbol.path, os.path.join(self.getDestImgFolder(uid), tail))
+        
+    
+    def addColumns(self, layer):
+        """Add a new column to hold the color and size used in symbology"""
         if self.__qgis.hasField(layer, self.__colorField) == False:
-            self.__qgis.addField(layer, self.__colorField)                          
+            self.__qgis.addField(layer, self.__colorField) 
+        if self.__qgis.hasField(layer, self.__sizeField) == False:
+            self.__qgis.addField(layer, self.__sizeField)  
                                                         
     def getSafeString(self, val):
         """Return a string condsidered safe for use in file names"""
@@ -713,12 +740,12 @@ class model:
                     bbox.setTop(extent.yMaximum())
             
                 # Add a color column
-                self.addColorColumn(destLayer)
+                self.addColumns(destLayer)
                 tick+=1
                 progress.setValue(tick)
                 
                 # Read colors from the QgsVectorLayer
-                syms = self.setSymbology(renderer, destLayer, vect.transparency, i)
+                syms = self.getSymbology(renderer, destLayer, vect.transparency, i)
                 tick+=1
                 progress.setValue(tick)
             
@@ -733,7 +760,7 @@ class model:
                 # Determine the attributes to preserve from the shapefile
                 # Limited to color, id and label fields
                 # Popup attributes are preserved in a CSV file                
-                preserveAttributes = [self.__colorField]
+                preserveAttributes = [self.__colorField, self.__sizeField]
                 
                 # Get any labels for the QgsVectorLayer
                 label = labeling(vect.layer, i)
@@ -768,7 +795,7 @@ class model:
                 tick+=1
                 progress.setValue(tick)         
                 
-                outVars.outputLayers.append(outputLayer(objName, name, outlineWidth, vect.main, hasTip, hasViz))
+                outVars.outputLayers.append(outputLayer(objName, name, outlineWidth, vect.main, hasTip, hasViz, syms))
                 
                 if self.legend and vect.main:
                     # Create the legend for the main layer
@@ -780,6 +807,9 @@ class model:
             # Write symbol styles
             self.writeCss(uid, symbols, labels)  
             
+            # Copy any external SVG files
+            self.copyImgFiles(uid, symbols)
+            
             # Alter the index file
             n = self.getDestIndexFile(uid)
             
@@ -787,9 +817,9 @@ class model:
             tick+=1
             progress.setValue(tick)
             
-            # Order of things is important
-            # writeDataFile() appends an ID field if not already in the popup
-            # Would result in the popup template potentially having an unexpected ID field
+            ''''Order of things is important
+            writeDataFile() appends an ID field if not already in the popup
+            Would result in the popup template potentially having an unexpected ID field'''
             if self.popup == True or self.hasViz == True:
                 self.__logger.info("EXPORT popup data")
                 # Create the data files

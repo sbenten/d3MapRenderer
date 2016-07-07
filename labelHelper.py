@@ -1,5 +1,6 @@
 from qgis.core import *
 from logger import log
+
 from d3MapRenderer.projections import orthographic
 
 class labeling(object):
@@ -82,12 +83,64 @@ class labeling(object):
         """Does the layer have labels enabled and a field specified?
         At the moment expressions are not supported"""
         return self.enabled == True and self.fieldName != u"" and self.isExpression == False
-           
+
+ 
+    def zoomLabelScript(self, safeCentroid):
+        """The script to resize SVG text elements
+        
+        :param safeCentroid: Check whether the label is clipped on the other side of the globe? 
+                             Orthographic projection requires no resizing of labels, 
+                             but does require labels to be shown / hidden depending on the rotation of the globe 
+        :type safeCentroid: bool 
+        """
+        if safeCentroid == True:        
+            return """label{i}.each(function(d, i) {{
+        var centroid = getSafeCentroid(d);    
+        var label = d3.select(label{i}[0][i]);            
+        //console.log(label.text(), i, clipped, path.centroid(d));            
+        if (centroid[0] == 0 && centroid[1] == 0) {{
+          label.style("display", "none");
+        }} else {{
+          label.style("display", null);
+        }}
+        label.attr("transform", "translate(" + centroid + ")");
+      }});\n""".format(i = self.index)
+      
+        else:
+            return """label{i}.style("stroke-width", {sw} / d3.event.scale);
+      label{i}.style("font-size", labelSize({ls}, d3.event.scale)  + "pt");\n""".format(
+                                                                                        i = self.index,
+                                                                                        sw = self.strokeWidth,
+                                                                                        ls = self.fontSize)
+      
+    def getLabelObjectScript(self, safeCentroid):
+        """The Javascript for creating the SVG text elements
+        
+        :param safeCentroid: Check whether the label is clipped on the other side of the globe
+                             Othrographic version to  return the Javascript for creating the SVG text elements
+                             Orthographic projections may have labels clipped from view
+        :type safeCentroid: bool """
+        
+        centroid = "path.centroid(d)"
+        if safeCentroid == True:
+            centroid = "getSafeCentroid(d)"        
+        
+        return """      label{i} = vectors{i}.selectAll("text").data(object{i}.features);
+      label{i}.enter()
+        .append("text")
+        .attr("transform", function(d){{ var centroid = {cent}; return "translate(" + centroid + ")"; }})
+        .style("display", function(d){{ var centroid = {cent}; return (centroid[0] == 0 && centroid[1] == 0) ? "none": null; }})
+        .text(function(d) {{ return d.properties.{f}; }})
+        .attr("class", "label{i}");\n""".format(
+                                                  i = self.index,
+                                                  f = self.fieldName,
+                                                  cent = centroid)
+
     
     def getStyle(self):
         """Convert the label settings to CSS3"""
         if self.hasLabels() == True:
-            return """.label{i}{b} 
+            return """.label{i}{{ 
     pointer-events: none; 
     {fill}
     {fontFamily}
@@ -102,8 +155,7 @@ class labeling(object):
     {textAnchor}
     {alignmentBaseline}
     {textShadow}
-{e}""".format(              
-           b = "{",
+}}""".format(              
            i = self.index,
            fill = self.getFill(),
            fontFamily = self.getFontFamily(),
@@ -118,7 +170,6 @@ class labeling(object):
            textAnchor = self.getTextAnchor(),
            alignmentBaseline = self.getAlignmentBaseline(),
            textShadow = self.getTextShadow(),
-           e = "}"
            )
         
         else:
@@ -287,7 +338,7 @@ class labeling(object):
                     #text-shadow attributes are CSV
                     output.append(", ")    
                 #CSS and QGIS differ on the starting angle. 
-                #QGIS stores anglkes as 0 through 180 with negative values for the LHS of the compass
+                #QGIS stores angles as 0 through 180 with negative values for the LHS of the compass
                 angle = (360 +self.shadowOffsetAngle) if self.shadowOffsetAngle < 0 else self.shadowOffsetAngle
                 
                 #CSS is +90 degrees, starting at East on the compass

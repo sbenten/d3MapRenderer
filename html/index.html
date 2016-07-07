@@ -73,7 +73,7 @@
 
     //Download
     queue(2)
-<%queuefiles%>
+<%queuefiles%>
       .await(ready);
 
     //Load map when downloaded
@@ -84,19 +84,15 @@
 <%polygonobjects%>
 <%refineprojection%>
       //Add all vector features
-      path.pointRadius(1.0);
 <%vectorfeatures%>
-<%labelfeatures%>
-    
+<%labelfeatures%>    
 <%datastore%>
-
 <%addlegend%>
     }
 
 <%tipfunctions%>
-
 <%chartfunction%>
-
+<%symbologyfunctions%>
 <%safecentroidfunction%>  
 <%zoomfunction%>
   

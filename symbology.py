@@ -1,7 +1,9 @@
+import os
 from qgis.core import *
 from PyQt4.QtCore import QVariant, Qt
 
 from logger import log
+from style import css3
 
 class layerSymbols(list):
     """List of symbols within a particular layer. Add only items from the symbol class"""
@@ -17,103 +19,689 @@ class layerSymbols(list):
         Take the average width and do it to the entire group"""
         items = []
         for s in self:
-            items.append(s.outlineWidth)
+            items.append(s.symbol.outlineWidth)
         average = sum(items) / float(len(items)) 
         return round(average, 4)
-        
-class singleSymbol(object):
-    """Single symbol.Base class for tracking symbology within a layer"""
     
-    def __init__(self, geoType, sym, css, trans):
+class symbol(object):
+    
+    def __init__(self, geoType, parentSymbol, index, cssClassName, layerTransparency):
+        """
+        Abstract base class 
+        :param geoType: Layer.geometryType() GeometryType of the layer.
+        :type geoType: GeometryType  e.g. QGis.WKBPolygon
+        
+        :param parentSymbol: The parent symbol to use with this layer.
+        :type parentSymbol: QgsSymbolV2
+        
+        :param index: Index in the layer output order
+        :type index: int
+                
+        :param cssClassName: Css class name to use.
+        :type cssClassName: str
+        
+        :param layerTransparency: Transparency setting for the overall layer.
+        :type layerTransparency: float
+        """
+        self.geometryType = geoType
+        self.transparency = layerTransparency
+        self.cssHelper = css3()
+        self.index = index
+        self.css = cssClassName
+        self.size = "0"
+        self.color = "#000000"
+        self.colorTrans = 255
+        self.symbolTrans = 1.0
+        self.outlineWidth = 0.26
+        self.outlineColor = "#000000"
+        self.outlineStyle = None
+        self.outlineTrans = 1.0
+        self.brushStyle = 1
+        self.path = u""
+
+    def getOpacity(self):
+        """Get the opacity for the range"""
+        opacity = "0"
+        if self.brushStyle > 0: 
+            '''Might implement different brush styles later, for now just interested in "No brush"'''
+            opacity = self.cssHelper.getOpacity(self.transparency, self.colorTrans, self.symbolTrans)
+        return opacity    
+                
+    def getOutlineOpacity(self):
+        """Get the opacity for the range"""
+        opacity = "0"
+        if self.outlineStyle > 0: 
+            '''Might implement different brush styles later, for now just interested in "No brush"'''
+            opacity = self.cssHelper.getOpacity(self.transparency, self.outlineTrans, self.symbolTrans)           
+        
+        return opacity
+    
+    def getAdditionalScripts(self):
+        """Get any additional JavaScript functions for the symbols to render correctly """
+        
+        return ""
+    
+    def hasImage(self):
+        """Does the symbology include an external image?"""
+        return False
+           
+    def toCss(self):
+        """Retrieve the Css for the symbol"""
+        return ""
+       
+    def toLayerScript(self, pattern, safeCentroid):
+        """Retrieve the layer render script for d3 to use"""        
+        output = pattern.format("""        .attr("d", path)\n""")
+                
+        return output    
+    
+    def zoomScalingScript(self, safeCentroid):
+        """Retrieve the layer zoom script d3 to use
+
+        :param safeCentroid: Check whether the label is clipped on the other side of the globe
+                             Othrographic version to  return the JavaScript for creating the SVG text elements
+                             Orthographic projections may have labels clipped from view
+        :type safeCentroid: bool
+
+        """
+        template = "      vector{index}.style(\"stroke-width\", {width} / d3.event.scale);\n"
+        
+        return template.format(
+                               index = self.index,
+                               width = self.outlineWidth)
+        
+    def safeSvgNode(self, safeCentroid):
+        """Retrieve any special node creation variables
+
+        :param safeCentroid: Check whether the label is clipped on the other side of the globe
+                             Othrographic version to  return the JavaScript for creating the SVG text elements
+                             Orthographic projections may have labels clipped from view
+        :type safeCentroid: bool
+
+        """
+        return ""
+    
+class simpleLineSymbol(symbol):
+    
+    def __init__(self, geoType, parentSymbol, index, cssClassName, layerTransparency):
+        """ 
+        :param geoType: Layer.geometryType() GeometryType of the layer.
+        :type geoType: GeometryType  e.g. QGis.WKBPolygon
+        
+        :param parentSymbol: The parent symbol to use with this layer.
+        :type parentSymbol: QgsLineSymbolV2  
+        
+        :param index: Index in the layer output order
+        :type index: int
+                
+        :param cssClassName: Css class name to use.
+        :type cssClassName: str
+        
+        :param layerTransparency: Transparency setting for the overall layer.
+        :type layerTransparency: float
+        """
+        self.__logger = log(self.__class__.__name__)
+        self.geometryType = geoType
+        self.transparency = layerTransparency
+        self.cssHelper = css3()
+        self.index = index
+        self.css = cssClassName 
+        self.size = ""
+        self.color = "#000000"
+        self.colorTrans = 255
+        self.symbolTrans = 1.0
+        self.outlineWidth = 0.26
+        self.outlineColor = "#000000"
+        self.outlineStyle = None
+        self.outlineTrans = 1.0
+        self.brushStyle = 1
+        self.readStyles(parentSymbol)
+       
+    def readStyles(self, parentSymbol):
+        """Read the styles properties from the layer and store for later use
+        
+        :param parentSymbol: The parent symbol to use with this layer.
+        :type parentSymbol: QgsSymbolV2        
+        """
+            
+        try:
+            self.color = parentSymbol.color().name()
+            self.colorTrans = self.cssHelper.convertColorTransToCssOpacity(parentSymbol.color().alpha())
+            self.symbolTrans = parentSymbol.alpha()
+            self.outlineWidth = parentSymbol.width()
+            self.outlineColor = parentSymbol.color().name()
+            self.outlineTrans = self.cssHelper.convertColorTransToCssOpacity(parentSymbol.color().alpha())
+            self.outlineStyle = parentSymbol.symbolLayer(0).penStyle()
+        except (AttributeError, TypeError):
+            self.__logger.error2()
+            pass    
+        
+    def toCss(self):
+        """Retrieve the Css for line symbols"""
+        val = ".{c} {{ stroke: {s}; stroke-width: {w}; stroke-opacity: {o}; stroke-dasharray: {d}; fill-opacity: 0.0; }}"
+        output = val.format(
+            c = self.css,
+            s = unicode(self.outlineColor),
+            w = unicode(self.outlineWidth),
+            d = self.cssHelper.getBorderStyle(self.outlineStyle),
+            o = self.getOpacity())  
+        
+        self.__logger.info(output)
+        
+        return output       
+
+class simpleMarkerSymbol(symbol):
+    
+    def __init__(self, geoType, parentSymbol, index, cssClassName, layerTransparency):
+        """ 
+        :param geoType: Layer.geometryType() GeometryType of the layer.
+        :type geoType: GeometryType  e.g. QGis.WKBPolygon
+        
+        :param parentSymbol: The parent symbol to use with this layer.
+        :type parentSymbol: QgsMarkerSymbolV2
+        
+        :param index: Index in the layer output order
+        :type index: int
+                
+        :param cssClassName: Css class name to use.
+        :type cssClassName: str
+        
+        :param layerTransparency: Transparency setting for the overall layer.
+        :type layerTransparency: float
+        """
+        self.__logger = log(self.__class__.__name__)
+        self.geometryType = geoType
+        self.transparency = layerTransparency
+        self.cssHelper = css3()
+        self.index = index
+        self.css = cssClassName
+        self.size = "8"            
+        self.name = "circle"
+        self.color = "#000000"
+        self.colorTrans = 255
+        self.symbolTrans = 1.0
+        self.outlineWidth = 0.26
+        self.outlineColor = "#000000"
+        self.outlineStyle = None
+        self.outlineTrans = 1.0
+        self.brushStyle = 1
+        self.readStyles(parentSymbol)
+        
+    def readStyles(self, parentSymbol):
+        """Read the styles properties from the layer and store for later use
+        
+        :param parentSymbol: The parent symbol to use with this layer.
+        :type parentSymbol: QgsSymbolV2        
+        """        
+        try:
+            self.color = parentSymbol.color().name()
+            self.colorTrans = self.cssHelper.convertColorTransToCssOpacity(parentSymbol.color().alpha())
+            self.symbolTrans = parentSymbol.alpha()
+            '''No width property in a simple marker
+            self.outlineWidth = parentSymbol.width()'''
+            ''' d3 symbols are sized 64 by default '''
+            self.size = str(parentSymbol.size()  * 8)           
+            self.outlineColor = parentSymbol.symbolLayer(0).outlineColor().name()
+            self.outlineTrans = self.cssHelper.convertColorTransToCssOpacity(parentSymbol.symbolLayer(0).outlineColor().alpha())
+            self.outlineStyle = parentSymbol.symbolLayer(0).outlineStyle()
+            self.name = parentSymbol.symbolLayer(0).name()
+        except (AttributeError, TypeError):
+            self.__logger.error2()
+            pass
+        
+    def toCss(self):
+        """Get the style for points"""
+        
+        val = ".{c} {{ stroke: {s}; stroke-width: {w}; stroke-opacity: {so}; stroke-dasharray: {d}; fill: {f}; fill-opacity: {fo}; }}"
+        
+        output = val.format(
+            c = self.css,
+            s = unicode(self.outlineColor),
+            w = unicode(self.outlineWidth),
+            d = self.cssHelper.getBorderStyle(self.outlineStyle),
+            f = unicode(self.color),
+            fo = self.getOpacity(),
+            so = self.getOutlineOpacity()) 
+        
+        self.__logger.info(output)
+        
+        return output   
+
+    def toLayerScript(self, pattern, safeCentroid):
+        """Retrieve the layer render script for d3 to use
+        
+        :param pattern: The string.format to use as the layer JavaScript.
+        :type pattern: string
+        
+        :param safeCentroid: Check whether the label is clipped on the other side of the globe
+                             Othrographic version to  return the JavaScript for creating the SVG text elements
+                             Orthographic projections may have labels clipped from view
+        :type safeCentroid: bool
+
+        """
+        
+        centroid = "path.centroid(d)"
+        if safeCentroid == True:
+            centroid = "getSafeCentroid(d)"
+        
+        val = """        .attr("d", d3.svg.symbol().type("{sym}").size( function(d) {{ return d.properties.d3S; }}  ))
+        .attr("transform", function(d) {{ var centroid = {cent}; return "translate(" + (centroid[0] - (d.properties.d3S / projection.scale() / 2)) + "," + (centroid[1] - (d.properties.d3S / projection.scale() / 2)) + ")";}})\n"""
+                           
+        inner = val.format(
+                           sym = self.getShape(),
+                           cent = centroid)         
+        
+        
+        output = pattern.format(inner)
+        
+        self.__logger.info(output)
+        
+        return output
+    
+    def zoomScalingScript(self, safeCentroid):
+        """Retrieve the layer zoom script d3 to use
+
+        :param safeCentroid: Check whether the label is clipped on the other side of the globe
+                             Othrographic version to  return the JavaScript for creating the SVG text elements
+                             Orthographic projections may have labels clipped from view
+        :type safeCentroid: bool
+
+        """
+        centroid = "path.centroid(d)"
+        if safeCentroid == True:
+            centroid = "getSafeCentroid(d)"
+            
+        template = """      vector{i}.each(function(d, i) {{
+        var centroid = {cent};    
+        var g = d3.select(vector{i}[0][i]);           
+        if (centroid[0] == 0 && centroid[1] == 0) {{
+          g.style("display", "none");
+        }} else {{
+          g.style("display", null);
+        }}
+        g.attr("transform", "translate(" + (centroid[0] - (d.properties.d3S / projection.scale() / 2)) + "," + (centroid[1] - (d.properties.d3S / projection.scale() / 2)) + ")")        
+         .attr("d", d3.svg.symbol().type("{sym}").size( function(d) { return d.properties.d3S; }  ));
+      }});\n"""
+        
+        return template.format(
+                               i = self.index,
+                               sym = self.getShape(),
+                               cent = centroid)
+        
+    def getShape(self):
+        """Retrieve the d3 equivelent shape"""
+        d3Shape = "circle"
+        
+        if self.name == "cross":
+            d3Shape = "cross"
+        elif self.name == "rectangle":
+            d3Shape = "square"
+        elif self.name == "diamond":
+            d3Shape = "diamond"        
+        elif self.name == "triangle":
+            d3Shape = "triangle-up" 
+        elif self.name == "equilateral_triangle":
+            d3Shape = "triangle-up" 
+        else:
+            d3Shape = "circle"
+            
+        return d3Shape
+    
+    
+
+class simpleFillSymbol(symbol):
+    
+    def __init__(self, geoType, parentSymbol, index, cssClassName, layerTransparency):
+        """ 
+        :param geoType: Layer.geometryType() GeometryType of the layer.
+        :type geoType: GeometryType  e.g. QGis.WKBPolygon
+        
+        :param parentSymbol: The parent symbol to use with this layer.
+        :type parentSymbol: QgsFillSymbolV2
+        
+        :param index: Index in the layer output order
+        :type index: int
+                
+        :param cssClassName: Css class name to use.
+        :type cssClassName: str
+        
+        :param layerTransparency: Transparency setting for the overall layer.
+        :type layerTransparency: float
+        """
+        self.__logger = log(self.__class__.__name__)
+        self.geometryType = geoType
+        self.transparency = layerTransparency
+        self.cssHelper = css3()
+        self.index = index
+        self.css = cssClassName
+        self.size = ""
+        self.color = "#000000"
+        self.colorTrans = 255
+        self.symbolTrans = 1.0
+        self.outlineWidth = 0.26
+        self.outlineColor = "#000000"
+        self.outlineStyle = None
+        self.outlineTrans = 1.0
+        self.brushStyle = 1
+        self.readStyles(parentSymbol)
+       
+    def readStyles(self, parentSymbol):
+        """Read the styles properties from the layer and store for later use
+        
+        :param parentSymbol: The parent symbol to use with this layer.
+        :type parentSymbol: QgsSymbolV2        
+        """        
+        try:
+            self.color = parentSymbol.color().name()
+            self.colorTrans = self.cssHelper.convertColorTransToCssOpacity(parentSymbol.color().alpha())
+            self.symbolTrans = parentSymbol.alpha()
+            self.outlineWidth = parentSymbol.symbolLayer(0).borderWidth()
+            self.outlineColor = parentSymbol.symbolLayer(0).borderColor().name()
+            self.outlineTrans = self.cssHelper.convertColorTransToCssOpacity(parentSymbol.symbolLayer(0).borderColor().alpha())
+            self.outlineStyle = parentSymbol.symbolLayer(0).borderStyle()
+        except (AttributeError, TypeError):
+            self.__logger.error2()
+            pass    
+   
+    def toCss(self):
+        """Get the style for simple polygons"""
+        val = ".{c} {{ stroke: {s}; stroke-width: {w}; stroke-opacity: {so}; stroke-dasharray: {d}; fill: {f}; fill-opacity: {fo}; }}"
+        
+        output = val.format(
+            c = self.css,
+            s = unicode(self.outlineColor),
+            w = unicode(self.outlineWidth),
+            d = self.cssHelper.getBorderStyle(self.outlineStyle),
+            f = unicode(self.color),
+            fo = self.getOpacity(),
+            so = self.getOutlineOpacity()) 
+        
+        self.__logger.info(output)
+        
+        return output 
+        
+class svgMarkerSymbol(symbol):
+    
+    def __init__(self, geoType, parentSymbol, index, cssClassName, layerTransparency):
+        """ 
+        :param geoType: Layer.geometryType() GeometryType of the layer.
+        :type geoType: GeometryType  e.g. QGis.WKBPolygon
+        
+        :param parentSymbol: The parent symbol to use with this layer.
+        :type parentSymbol: QgsMarkerSymbolV2
+        
+        :param index: Index in the layer output order
+        :type index: int
+                
+        :param cssClassName: Css class name to use.
+        :type cssClassName: str
+        
+        :param layerTransparency: Transparency setting for the overall layer.
+        :type layerTransparency: float
+        """
+        self.__logger = log(self.__class__.__name__)
+        self.geometryType = geoType
+        self.transparency = layerTransparency
+        self.cssHelper = css3()
+        self.index = index
+        self.css = cssClassName
+        self.size = "8"            
+        self.path = u""
+        self.color = "#000000"
+        self.colorTrans = 255
+        self.symbolTrans = 1.0
+        self.outlineWidth = 0.26
+        self.outlineColor = "#000000"
+        # No outline style set by this symbol, force a solid border
+        self.outlineStyle = 1
+        self.outlineTrans = 1.0
+        self.brushStyle = 1
+        self.readStyles(parentSymbol)
+        
+    def readStyles(self, parentSymbol):
+        """Read the styles properties from the layer and store for later use
+        
+        :param parentSymbol: The parent symbol to use with this layer.
+        :type parentSymbol: QgsSymbolV2        
+        """        
+        try:           
+            self.color = parentSymbol.color().name()
+            self.colorTrans = self.cssHelper.convertColorTransToCssOpacity(parentSymbol.color().alpha())
+            self.symbolTrans = parentSymbol.alpha()
+            self.outlineWidth = parentSymbol.symbolLayer(0).outlineWidth()
+            self.size = str(parentSymbol.size())           
+            self.outlineColor = parentSymbol.symbolLayer(0).outlineColor().name()
+            self.outlineTrans = self.cssHelper.convertColorTransToCssOpacity(parentSymbol.symbolLayer(0).outlineColor().alpha())
+            self.path = parentSymbol.symbolLayer(0).path()
+        except (AttributeError, TypeError):
+            self.__logger.error2()
+            pass
+    
+    def getAdditionalScripts(self):
+        """Get any additional JavaScript functions for the symbols to render correctly """
+        
+        return """    function loadImage(parent, child, css, size){
+      var str = "{0}px".replace("{0}", size == "null" ? 0 : size);
+      var n = parent.appendChild(child.cloneNode(true)); 
+      d3.select(n)
+        .attr("width", str)
+        .attr("height", str)
+        .attr("x", -size / 2)
+        .attr("y", -size / 2)
+        .attr("class", css);
+    }\n""" 
+        
+    def hasImage(self):
+        """Does the symbology include an external image?"""
+        return True    
+        
+    def toCss(self):
+        """Get the style for SVG images
+        !important used to cram colour choice down the SVG XML child nodes
+        Works on most well designed SVGs produced for QGIS, but not SVGs with specific colours within the XML"""
+
+        val = ".{c} {{ stroke: {s} !important; stroke-width: {w} !important; stroke-opacity: {so} !important; stroke-dasharray: {d} !important; fill: {f} !important; fill-opacity: {fo} !important; }}"
+        
+        output = val.format(
+            c = self.css,
+            s = unicode(self.outlineColor),
+            w = unicode(self.outlineWidth),
+            d = self.cssHelper.getBorderStyle(self.outlineStyle),
+            f = unicode(self.color),
+            fo = self.getOpacity(),
+            so = self.getOutlineOpacity()) 
+        
+        self.__logger.info(output)
+        
+        return output   
+
+    def toLayerScript(self, pattern, safeCentroid):
+        """Retrieve the layer render script for d3 to use.
+        
+        :param pattern: The string.format to use as the layer JavaScript.
+        :type pattern: string
+        
+        :param safeCentroid: Check whether the label is clipped on the other side of the globe
+                             Othrographic version to  return the JavaScript for creating the SVG text elements
+                             Orthographic projections may have labels clipped from view
+        :type safeCentroid: bool
+        
+        Output for SVG marker symbols is completely different, as it requires the image to be loaded into XML
+        before then being cloned and added to the html document. This is required in order to color the image
+        as specified within QGIS. Previous attempts resulted in the image not being scaled correctly, or the 
+        colours being ignored. e.g.:
+        
+        The following results in a scaled image, but does NOT reflect the chosen colors:
+      vector1.enter()
+        .append("image")
+        .attr("xlink:href", "img/poi_tower_power.svg")
+        .attr("width", function(d) { return d.properties.d3S; })
+        .attr("height", function(d) { return d.properties.d3S; })
+        .attr("transform", function(d) { return "translate(" + (path.centroid(d)[0] - (d.properties.d3S / projection.scale() / 2)) + "," + (path.centroid(d)[1] - (d.properties.d3S / projection.scale() / 2)) + ")"; })
+        .attr("class", function (d) { return d.properties.d3Css; });
+        
+        But then, on Orthographic projections, d3 stamps out any d attribute of any path elements within image loaded as an SVG...
+        TODO: WTF? reload the image, or try and prevent d3's natural workings 
+        """
+        
+        val = """      vector{i} = vectors{i}.selectAll("path").data(object{i}.features);
+      d3.xml("img/{svg}", "image/svg+xml", function(xml) {{  
+        vector{i}Node = document.importNode(xml.documentElement, true);
+        vector{i}.enter()
+          .append("g")
+          .attr("transform", function(d) {{ var centroid = {cent}; return "translate(" + (centroid[0] - (d.properties.d3S / projection.scale() / 2)) + "," + (centroid[1] - (d.properties.d3S / projection.scale() / 2)) + ")"; }})
+          .attr("width", function(d) {{ return d.properties.d3S; }})
+          .attr("height", function(d) {{ return d.properties.d3S; }})
+          .each( function(d) {{ return loadImage(this, vector{i}Node, d.properties.d3Css, d.properties.d3S); }} );    
+      }});\n"""
+
+        head, tail = os.path.split(self.path)
+        
+        centroid = "path.centroid(d)"
+        if safeCentroid == True:
+            centroid = "getSafeCentroid(d)"
+        
+        output = val.format(
+            i = self.index,
+            svg = tail,
+            cent = centroid)
+                    
+        self.__logger.info(output)
+        
+        return output        
+    
+    def zoomScalingScript(self, safeCentroid):
+        """Retrieve the layer zoom script d3 to use
+
+        :param safeCentroid: Check whether the label is clipped on the other side of the globe
+                             Othrographic version to  return the JavaScript for creating the SVG text elements
+                             Orthographic projections may have labels clipped from view
+        :type safeCentroid: bool
+
+        """
+        centroid = "path.centroid(d)"
+        imgReload = ""
+        if safeCentroid == True:
+            centroid = "getSafeCentroid(d)"
+            imgReload = """// Remove the corrupted SVG and reload
+          var img = g[0][0].childNodes[0];
+          if (img != null){{
+            g[0][0].removeChild(img);
+          }}
+          loadImage(g[0][0], vector{0}Node, d.properties.d3Css, d.properties.d3S);""".format(self.index)
+            
+        template = """      vector{i}.each(function(d, i) {{
+        var centroid = {cent};    
+        var g = d3.select(vector{i}[0][i]);           
+        if (centroid[0] == 0 && centroid[1] == 0) {{
+          g.style("display", "none");
+        }} else {{
+          g.style("display", null);
+          {img}
+        }}
+        g.attr("transform", "translate(" + (centroid[0] - (d.properties.d3S / projection.scale() / 2)) + "," + (centroid[1] - (d.properties.d3S / projection.scale() / 2)) + ")");
+      }});\n"""
+        
+        return template.format(
+                               i = self.index,
+                               cent = centroid,
+                               img = imgReload)
+    
+    def safeSvgNode(self, safeCentroid):
+        """Retrieve any special node creation variables
+
+        :param safeCentroid: Check whether the label is clipped on the other side of the globe
+                             Othrographic version to  return the JavaScript for creating the SVG text elements
+                             Orthographic projections may have labels clipped from view
+        :type safeCentroid: bool
+
+        """
+        if safeCentroid == True:
+            return """    var vector{0}Node = void 0;\n""".format(self.index)
+        else:
+            return ""
+        
+                
+class singleSymbol(object):
+    """Single symbol renderer for tracking symbology within a layer"""
+    
+    def __init__(self, geoType, parentSymbol, index, cssClassName, layerTransparency):
         """Initialise the symbol range
         
         :param geoType: Layer.geometryType() GeometryType of the layer.
         :type geoType: GeometryType  e.g. QGis.WKBPolygon
         
-        :param sym: The symbol to use with this layer.
-        :type sym: QgsSymbolV2
+        :param parentSymbol: The parent symbol to use with this layer.
+        :type parentSymbol: QgsSymbolV2
         
-        :param css: Css class name to use.
-        :type css: str
+        :param index: Index in the layer output order
+        :type index: int
         
-        :param trans: Transparency setting for the overall layer.
-        :type trans: float
+        :param cssClassName: Css class name to use.
+        :type cssClassName: str
+        
+        :param layerTransparency: Transparency setting for the overall layer.
+        :type layerTransparency: float
         
         """
         self.__logger = log(self.__class__.__name__) 
-        self.geometryType = geoType
-        self.label = ""
-        self.css = css
-        self.transparency = trans
-        self.outlineWidth = 0
-        self.outlineColor = ""
-        self.outlineStyle = None
-        self.outlineTrans = 1.0
-        self.color = sym.color().name()
-        self.colorTrans = sym.color().alpha()
-        self.symbolTrans = sym.alpha()
-        self.brushStyle = 1
-        
-        self.outlineWidth, self.outlineColor, self.outlineStyle, self.outlineTrans, self.brushStyle = self.getOutlineDetails(sym)
+        s = self.symbolFactory(geoType, parentSymbol, index, cssClassName, layerTransparency)
+        self.symbol = s
         
         
-    def getOutlineDetails(self, sym):
+    def symbolFactory(self, geoType, parentSymbol, index, cssClassName, layerTransparency):
+        """
+        :param geoType: Layer.geometryType() GeometryType of the layer.
+        :type geoType: GeometryType  e.g. QGis.WKBPolygon
         
-        outlineWidth = 0
-        outlineColor = ""
-        outlineStyle = None
-        outlineTrans = 1.0
-        brushStyle = 1
+        :param parentSymbol: The parent symbol to use with this layer.
+        :type parentSymbol: QgsSymbolV2
         
-        t = type(sym)
+        :param index: Index in the layer output order
+        :type index: int
         
-        try:
+        :param cssClassName: Css class name to use.
+        :type cssClassName: str
         
-            # different symbols have different attributes
-            if t is QgsLineSymbolV2:
-                outlineWidth = sym.width()
-                outlineColor = sym.color().name()
-                outlineTrans = sym.color().alpha()
-            elif t is QgsMarkerSymbolV2:
-                outlineWidth = sym.symbolLayer(0).outlineWidth()
-                outlineColor = sym.symbolLayer(0).outlineColor().name()
-                outlineStyle = sym.symbolLayer(0).outlineStyle()
-                outlineTrans = sym.symbolLayer(0).outlineColor().alpha()
-            elif t is QgsFillSymbolV2:
-                outlineWidth = sym.symbolLayer(0).borderWidth()
-                outlineColor = sym.symbolLayer(0).borderColor().name()
-                outlineStyle = sym.symbolLayer(0).borderStyle()
-                outlineTrans = sym.symbolLayer(0).borderColor().alpha()   
-                brushStyle =  sym.symbolLayer(0).brushStyle()        
-            else: 
-                # no idea what the symbol is, thrash around trying to guess the attributes            
-                if sym.symbolLayer(0) is not None:
-                    try:
-                        outlineWidth = sym.symbolLayer(0).borderWidth()
-                        outlineColor = sym.symbolLayer(0).borderColor().name()
-                        outlineStyle = sym.symbolLayer(0).borderStyle()
-                        outlineTrans = sym.symbolLayer(0).borderColor().alpha()
-                    except AttributeError:
-                        try:
-                            outlineWidth = sym.symbolLayer(0).outlineWidth()
-                            outlineColor = sym.symbolLayer(0).outlineColor().name()
-                            outlineStyle = sym.symbolLayer(0).outlineStyle()
-                            outlineTrans = sym.symbolLayer(0).outlineColor().alpha()
-                        except AttributeError:
-                            outlineWidth = sym.width()
-                            outlineColor = sym.color().name()
-                            outlineStyle = sym.penStyle()
-                            outlineTrans = sym.color().alpha()
-                else:
-                    outlineWidth = sym.width()
-                    outlineColor = sym.color().name()
-                    outlineStyle = sym.penStyle()
-                    outlineTrans = sym.color().alpha()
-        except:
-            pass
+        :param layerTransparency: Transparency setting for the overall layer.
+        :type layerTransparency: float
+        """
+        p = type(parentSymbol)
+        
+        if p is QgsLineSymbolV2:
+            return simpleLineSymbol(geoType, parentSymbol, index, cssClassName, layerTransparency)
+        
+        elif p is QgsMarkerSymbolV2:
+            if parentSymbol.symbolLayer(0) is not None:
+                #Examine the first symbolLayer
+                c = type(parentSymbol.symbolLayer(0))
+                
+                if c is QgsSvgMarkerSymbolLayerV2:
+                    return svgMarkerSymbol(geoType, parentSymbol, index, cssClassName, layerTransparency)
+                
+            # Drop through to simple marker symbol
+            return simpleMarkerSymbol(geoType, parentSymbol, index, cssClassName, layerTransparency)
+        
+        elif p is QgsFillSymbolV2:
+            if parentSymbol.symbolLayer(0) is not None:
+                #Examine the first symbolLayer
+                #c = type(parentSymbol.symbolLayer(0))
+                
+                """ TODO: Implement more complex symbols"""
+                '''if c is QgsCentroidFillSymbolLayerV2:
+                    return simpleFillSymbol(geoType, parentSymbol, index, cssClassName, layerTransparency)
+                elif c is QgsGradientFillSymbolLayerV2:
+                    return simpleFillSymbol(geoType, parentSymbol, index, cssClassName, layerTransparency)
+                elif c is QgsShapeburstFillSymbolLayerV2:
+                    return simpleFillSymbol(geoType, parentSymbol, index, cssClassName, layerTransparency)
+                elif c is QgsLinePatternFillSymbolLayer:
+                    return simpleFillSymbol(geoType, parentSymbol, index, cssClassName, layerTransparency)
+                else:'''
+                return simpleFillSymbol(geoType, parentSymbol, index, cssClassName, layerTransparency)
             
-        return outlineWidth, outlineColor, outlineStyle, outlineTrans, brushStyle
-        
+            else:
+                return p 
+            
     def getFilterExpression(self):
         """Get the filter expression for selecting features based on their attribute"""
         # Single symbols apply to every feature
@@ -122,140 +710,11 @@ class singleSymbol(object):
     def isValueInRange(self, value):
         """Is the specified value in the range? Always is for single classification"""
         return True
-    
-    def getStyle(self):
-        """Get the CSS style for the range"""
-        if self.geometryType == 0:
-            return self.getPointStyle()
-        elif self.geometryType == 1:
-            return self.getLineStyle()
-        elif self.geometryType == 2 or self.geometryType == 3:
-            return self.getPolygonStyle()
-        else:
-            return ""
-        
-    def getOpacity(self):
-        """Get the opacity for the range"""
-        opacity = "0"
-        if self.brushStyle > 0: 
-            '''
-    Might implement this lot later, for now just interested in "No brush"
-Qt::NoBrush    0    No brush pattern.
-Qt::SolidPattern    1    Uniform color.
-Qt::Dense1Pattern    2    Extremely dense brush pattern.
-Qt::Dense2Pattern    3    Very dense brush pattern.
-Qt::Dense3Pattern    4    Somewhat dense brush pattern.
-Qt::Dense4Pattern    5    Half dense brush pattern.
-Qt::Dense5Pattern    6    Somewhat sparse brush pattern.
-Qt::Dense6Pattern    7    Very sparse brush pattern.
-Qt::Dense7Pattern    8    Extremely sparse brush pattern.
-Qt::HorPattern    9    Horizontal lines.
-Qt::VerPattern    10    Vertical lines.
-Qt::CrossPattern    11    Crossing horizontal and vertical lines.
-Qt::BDiagPattern    12    Backward diagonal lines.
-Qt::FDiagPattern    13    Forward diagonal lines.
-Qt::DiagCrossPattern    14    Crossing diagonal lines.
-Qt::LinearGradientPattern    15    Linear gradient (set using a dedicated QBrush constructor).
-Qt::ConicalGradientPattern    17    Conical gradient (set using a dedicated QBrush constructor).
-Qt::RadialGradientPattern    16    Radial gradient (set using a dedicated QBrush constructor).
-Qt::TexturePattern    24    Custom pattern (see QBrush::setTexture())
-            '''
-            colorTrans = float(self.colorTrans)/255
-            opacity = str(self.transparency  * self.symbolTrans * colorTrans)
-        return opacity 
-    
-    
-    def getOutlineOpacity(self):
-        """Get the opacity for the range"""
-        opacity = "0"
-        if self.outlineStyle > 0:            
-            colorTrans = float(self.outlineTrans)/255
-            opacity = str(self.transparency  * self.symbolTrans * colorTrans)
-        
-        return opacity
-
-    def getPointStyle(self):
-        """Get the style for points. Only circles supported at the moment"""
-        #TODO: Add other point shapes, by default d3 creates points as circles
-        # Also sized circles will require some extra attribute setting 
-        # as SVG circle radius is cannot be set by CSS. 
-        # In D3 this needs setting "path.pointRadius(0.1);"
-        val = ".{c} {b} stroke: {s}; stroke-width: {w}; stroke-opacity: {so}; stroke-dasharray: {d}; fill: {f}; fill-opacity: {fo}; {e}"
-        
-        output = val.format(
-            c = self.css,
-            b = "{",
-            e = "}",
-            s = unicode(self.outlineColor),
-            w = unicode(self.outlineWidth),
-            d = self.getBorderStyle(self.outlineStyle),
-            f = unicode(self.color),
-            fo = self.getOpacity(),
-            so = self.getOutlineOpacity()) 
-         
-        return output
-    
-    def getLineStyle(self):
-        """Get the style for graduated polygons"""
-        val = ".{c} {b} stroke: {s}; stroke-width: {w}; stroke-opacity: {o}; stroke-dasharray: {d}; fill-opacity: 0.0; {e}"
-        output = val.format(
-            c = self.css,
-            b = "{",
-            e = "}",
-            s = unicode(self.outlineColor),
-            w = unicode(self.outlineWidth),
-            d = self.getBorderStyle(self.outlineStyle),
-            o = self.getOpacity())  
-        
-        return output
-    
-    
-    def getPolygonStyle(self):
-        """Get the style for graduated polygons"""
-        val = ".{c} {b} stroke: {s}; stroke-width: {w}; stroke-opacity: {so}; stroke-dasharray: {d}; fill: {f}; fill-opacity: {fo}; {e}"
-        output = val.format(
-            c = self.css,
-            b = "{",
-            e = "}",
-            s = unicode(self.outlineColor),
-            w = unicode(self.outlineWidth),
-            d = self.getBorderStyle(self.outlineStyle),
-            f = unicode(self.color),
-            fo = self.getOpacity(),
-            so = self.getOutlineOpacity())      
-        
-        return output
-    
-    def getBorderStyle(self, style):
-        """Get the line style applied to the border"""
-        
-        '''
-Qt::NoPen    0    no line at all. For example, QPainter::drawRect() fills but does not draw any boundary line.
-Qt::SolidLine    1    A plain line.
-Qt::DashLine    2    Dashes separated by a few pixels.
-Qt::DotLine    3    Dots separated by a few pixels.
-Qt::DashDotLine    4    Alternate dots and dashes.
-Qt::DashDotDotLine    5    One dash, two dots, one dash, two dots.
-Qt::CustomDashLine    6    A custom pattern defined using QPainterPathStroker::setDashPattern()
-        '''
-        
-        dash = ""
-        if style > 1:
-            if style == 2:
-                dash = "10,5"
-            if style == 3:
-                dash = "1,5"
-            if style == 4:
-                dash = "15,5,1,5"
-            if style == 5:
-                dash = "15,5,1,5,1,5"
-        
-        return dash
    
-class categorizedSymbol(singleSymbol):
-    """Categorized sysmbol class"""
+class categorized(singleSymbol):
+    """Categorized renderer class"""
     
-    def __init__(self, geoType, field, fieldType, range, css, trans):
+    def __init__(self, geoType, field, fieldType, category, index, cssClassName, layerTransparency):
         """Initialise the symbol range
         
         :param geoType: Layer.geometryType() GeometryType of the layer.
@@ -267,34 +726,28 @@ class categorizedSymbol(singleSymbol):
         :param fieldType: Type of the attribute field used in the symbology (Integer, Real, String, Date)
         :type fieldType: str
         
-        :param range: The range object.
-        :type range: QgsRendererCategoryV2
+        :param category: The category range object.
+        :type category: QgsRendererCategoryV2
         
-        :param css: Css class name to use.
-        :type css: str
+        :param index: Index in the layer output order
+        :type index: int
+                
+        :param cssClassName: Css class name to use.
+        :type cssClassName: str
         
-        :param trans: Transparency setting for the overall layer.
-        :type trans: float
+        :param layerTransparency: Transparency setting for the overall layer.
+        :type layerTransparency: float
         
         """
         self.__logger = log(self.__class__.__name__) 
-        self.geometryType = geoType
+        s = self.symbolFactory(geoType, category.symbol(), index, cssClassName, layerTransparency)
+        self.symbol = s
+        
         self.field = field
         self.fieldType = fieldType
-        self.label = range.label()
-        self.value = str(range.value())
-        self.css = css
-        self.transparency = trans
-        self.outlineWidth = 0
-        self.outlineColor = ""
-        self.outlineStyle = None
-        self.outlineTrans = 1.0
-        self.color = range.symbol().color().name()
-        self.colorTrans = range.symbol().color().alpha()
-        self.symbolTrans = range.symbol().alpha()
-        self.brushStyle = 1
-        
-        self.outlineWidth, self.outlineColor, self.outlineStyle, self.outlineTrans, self.brushStyle = self.getOutlineDetails(range.symbol())
+        self.label = category.label()
+        self.value = str(category.value())
+
         
     def getFilterExpression(self):
         """Get the filter expression for selecting features based on their attribute"""
@@ -316,10 +769,10 @@ class categorizedSymbol(singleSymbol):
         else:
             return False
     
-class graduatedSymbol(singleSymbol):
-    """Graduated symbol class"""
+class graduated(singleSymbol):
+    """Graduated renderer class"""
     
-    def __init__(self, geoType, field, range, css, trans):
+    def __init__(self, geoType, field, graduation, index, cssClassName, layerTransparency):
         """Initialise the symbol range
         
         :param geoType: Layer.geometryType() GeometryType of the layer.
@@ -328,36 +781,29 @@ class graduatedSymbol(singleSymbol):
         :param field: Name of the attribute field used in the symbology
         :type field: str
         
-        :param range: The range object.
-        :type range: QgsRendererRangeV2
+        :param graduation: The graduation range object.
+        :type graduation: QgsRendererRangeV2
         
-        :param css: Css class name to use.
-        :type css: str
+        :param index: Index in the layer output order
+        :type index: int
         
-        :param trans: Transparency setting for the overall layer.
-        :type trans: float
+        :param cssClassName: Css class name to use.
+        :type cssClassName: str
+        
+        :param layerTransparency: Transparency setting for the overall layer.
+        :type layerTransparency: float
         
         """
         self.__logger = log(self.__class__.__name__) 
-        self.geometryType = geoType
-        self.field = field
-        self.label = str(range.label())
-        self.value = str(range.lowerValue()) + " - " + str(range.upperValue())
-        self.css = css
-        self.transparency = trans
-        # Range values are always numerics
-        self.lowValue = range.lowerValue()
-        self.highValue = range.upperValue()
-        self.outlineWidth = 0.26
-        self.outlineColor = ""
-        self.outlineStyle = None
-        self.outlineTrans = 1.0
-        self.color = range.symbol().color().name()
-        self.colorTrans = range.symbol().color().alpha()
-        self.symbolTrans = range.symbol().alpha()
-        self.brushStyle = 1
+        s = self.symbolFactory(geoType, graduation.symbol(), index, cssClassName, layerTransparency)
+        self.symbol = s
         
-        self.outlineWidth, self.outlineColor, self.outlineStyle, self.outlineTrans, self.brushStyle = self.getOutlineDetails(range.symbol())
+        self.field = field
+        self.label = str(graduation.label())
+        self.value = str(graduation.lowerValue()) + " - " + str(graduation.upperValue())
+        # Range values are always numerics
+        self.lowValue = graduation.lowerValue()
+        self.highValue = graduation.upperValue()
                     
     def getFilterExpression(self):
         """Get the filter expression for selecting features based on their attribute"""

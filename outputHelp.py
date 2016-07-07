@@ -97,7 +97,7 @@ class outFormat(object):
         else:
             return ""
         
-    def createSvgPaths(self, labels):
+    def createSvgPaths(self, labels, selectedProjection):
         """Create the Svg group and path elements required by the layers"""
         paths = []
         template = "    var vectors{index} = vectors.append(\"g\");\n    var vector{index} = void 0;\n"
@@ -105,13 +105,15 @@ class outFormat(object):
         for i, o in enumerate(self.outVars.outputLayers):
             path = template.format( index = i )
             paths.append(path)
-        # TODO: Group labels with vector layer, not on top of all layers
+            paths.append(o.firstSymbol.safeSvgNode(selectedProjection.safeCentroid))
+
         if self.outVars.showLabels == True:
             labelTemplate = """    var label{index} = void 0;"""
             for l in labels:
                 if l.hasLabels() == True:
                     path = labelTemplate.format( index = l.index )
                     paths.append(path)
+         
             
     
         return "".join(paths)
@@ -198,16 +200,28 @@ class outFormat(object):
             val = val.replace("<%chart%>", cobj)
                 
         return val
+
+    def createSymbologyFunctions(self):
+        """Create the necessary helper functions for symbology to display correctly"""
+        scripts = []
+        
+        for o in self.outVars.outputLayers:
+            script = o.firstSymbol.getAdditionalScripts()
+            # Ensure items in the list are unique 
+            if script != "" and script not in scripts:
+                scripts.append(script)                
+        
+        return "".join(scripts)
      
     def createSafeCentroidFunction(self, selectedProjection):
         """Create the JavaScript centroid helper function"""       
      
-        if self.outVars.allowZoom == True and isinstance(selectedProjection, orthographic) == True:
+        if self.outVars.allowZoom == True and selectedProjection.safeCentroid == True:
             return """    function getSafeCentroid(d) {
       var centroid = path.centroid(d);
       var clip_test_path = d3.geo.path().projection(projection);
       var clipped =  typeof(clip_test_path({ type: "MultiPoint", coordinates: [centroid] })) == "undefined";
-      return clipped ? [null, null] : centroid; 
+      return clipped ? [0, 0] : centroid; 
     }
 """
 
@@ -231,21 +245,34 @@ class outFormat(object):
     }"""
      
         if self.outVars.allowZoom == True:
+
             if self.tipInUse() == True:
                 template = template.replace("<%hidetip%>", "hideTip();")
             else:
                 template =  template.replace("<%hidetip%>", "")
                 
-            template = template.replace("<%vectorscaling%>", selectedProjection.zoomScalingScript(self.outVars.outputLayers))
+            ''' Zoom scaling script '''     
+            v = []
             
+            ''' Projection wide scaling script '''
+            v.append(selectedProjection.zoomScalingScript())
+            
+            ''' Symbol specific scaling script '''
+            for o in self.outVars.outputLayers:
+                v.append(o.firstSymbol.zoomScalingScript(selectedProjection.safeCentroid))
+                
+            template = template.replace("<%vectorscaling%>", "".join(v))
+            
+            ''' Label scaling '''
             if self.outVars.showLabels == True:
+                                
                 template = template.replace("<%labelsize%>", labelSize)
                 
                 l = []
                 
                 for label in labels:
                     if label.hasLabels() == True:
-                        l.append(selectedProjection.zoomLabelScript(label.index, label.strokeWidth, label.fontSize)) 
+                        l.append(label.zoomLabelScript(selectedProjection.safeCentroid))                                       
                 
                 if len(l) > 0:     
                     template = template.replace("<%labelscaling%>", "".join(l))
@@ -322,31 +349,34 @@ class outFormat(object):
         return output
                 
     
-    def createVectorFeatures(self):
+    def createVectorFeatures(self, selectedProjection):
         """Create the polygon vector features"""
+        
         scripts = []
         template = """      vector{index} = vectors{index}.selectAll("path").data(object{index}.features);
       vector{index}.enter()
         .append("path")\n"""
-        main = """        .attr("id", function (d) { return d.id; })\n"""
-        static = """        .attr("d", path)
-        .attr("class", function (d) { return d.properties.d3Css; })"""
-        tip = """\n        .on("click", function (d) { return showTip(d.id); });\n\n"""
+        main = """        .attr("id", function (d) {{ return d.id; }})\n"""
+        static = """        .attr("class", function (d) {{ return d.properties.d3Css; }})"""
+        tip = """\n        .on("click", function (d) {{ return showTip(d.id); }});\n\n"""
         
         for i, o in enumerate(self.outVars.outputLayers):
+            layerScript = []
             script = template.format(
                 index = i
             )
-            scripts.append(script)
+            layerScript.append(script)
             if o.isMain == True:
-                scripts.append(main)
-            scripts.append(static)
+                layerScript.append(main)
+            layerScript.append("{0}")
+            layerScript.append(static)
 
             if o.hasTip == True or o.hasViz == True:
-                scripts.append(tip)
+                layerScript.append(tip)
             else:
-                scripts.append(";\n\n")
-                
+                layerScript.append(";\n\n")
+            
+            scripts.append(o.firstSymbol.toLayerScript( "".join(layerScript), selectedProjection.safeCentroid ) )     
     
         return "".join(scripts)
     
@@ -354,10 +384,10 @@ class outFormat(object):
         """Create the label features"""
         scripts = []
         
-        if self.outVars.showLabels == True:
+        if self.outVars.showLabels == True:            
             for l in labels:
                 if l.hasLabels() == True:
-                    scripts.append(selectedProjection.getLabelObjectScript(l.index, l.fieldName))
+                    scripts.append(l.getLabelObjectScript(selectedProjection.safeCentroid))
         
         return "".join(scripts)
         
@@ -371,7 +401,7 @@ class outFormat(object):
     def createLegend(self):
         """Add a call to the JavaScript function to add a legend"""           
         if self.outVars.hasLegend:
-            template = """      {e}
+            template = """      }}
       var legend = d3.legend({s})
         .csv("data/legend.csv")
         .position({p})
@@ -410,7 +440,7 @@ class outFormat(object):
         if self.tipInUse() == True and self.outVars.extTip == True:
             return """  <div id="extTip"></div>"""
         else:
-            return ""       
+            return ""        
  
     def writeIndexFile(self, path, outVars, bound, selectedProjection, selectedFields, labels):
         """Read and write the index html file"""
@@ -431,7 +461,7 @@ class outFormat(object):
         outHtml = outHtml.replace("<%width%>", str(self.outVars.width))
         outHtml = outHtml.replace("<%height%>", str(self.outVars.height))
         outHtml = outHtml.replace("<%projection%>", selectedProjection.toScript(bound, self.outVars.width, self.outVars.height))
-        outHtml = outHtml.replace("<%vectorpaths%>", self.createSvgPaths(labels))
+        outHtml = outHtml.replace("<%vectorpaths%>", self.createSvgPaths(labels, selectedProjection))
         outHtml = outHtml.replace("<%attachzoom%>", self.createZoom(selectedProjection))
         outHtml = outHtml.replace("<%hidetip%>", self.hideTip())
         outHtml = outHtml.replace("<%attachtip%>", self.createTipFunction())
@@ -439,11 +469,12 @@ class outFormat(object):
         outHtml = outHtml.replace("<%readyparams%>", self.createReadyParams())  
         outHtml = outHtml.replace("<%polygonobjects%>", self.createPolygonObjects())
         outHtml = outHtml.replace("<%refineprojection%>", selectedProjection.refineProjectionScript(self.createMainObject()))
-        outHtml = outHtml.replace("<%vectorfeatures%>", self.createVectorFeatures())
+        outHtml = outHtml.replace("<%vectorfeatures%>", self.createVectorFeatures(selectedProjection))
         outHtml = outHtml.replace("<%labelfeatures%>", self.createLabelFeatures(selectedProjection, labels))
         outHtml = outHtml.replace("<%datastore%>", self.createDataStore())
         outHtml = outHtml.replace("<%addlegend%>", self.createLegend())
         outHtml = outHtml.replace("<%tipfunctions%>", self.createTipHelpers())
+        outHtml = outHtml.replace("<%symbologyfunctions%>", self.createSymbologyFunctions())
         outHtml = outHtml.replace("<%chartfunction%>", self.createChartFunction(self.outVars.vizWidth, self.outVars.vizHeight))
         outHtml = outHtml.replace("<%safecentroidfunction%>", self.createSafeCentroidFunction(selectedProjection))
         outHtml = outHtml.replace("<%zoomfunction%>", self.createZoomFunction(selectedProjection, labels))
@@ -548,41 +579,67 @@ class geoJson(outFormat):
       vector{index}.enter()
         .append("path")\n"""
       
-        main = """        .attr("id", function (d) { return d.properties.""" + self.outVars.idField + """; })\n"""
-        static = """        .attr("d", path)
-        .attr("class", function (d) { return d.properties.d3Css; })"""
-        tip = """\n        .on("click", function (d) { return showTip(d.properties.""" + self.outVars.idField + """); });\n\n"""
+        main = """        .attr("id", function (d) {{ return d.properties.""" + self.outVars.idField + """; }})\n"""
+        static = """        .attr("class", function (d) {{ return d.properties.d3Css; }})"""
+        tip = """\n        .on("click", function (d) {{ return showTip(d.properties.""" + self.outVars.idField + """); }});\n\n"""
         
         i = 0
         for o in self.outVars.outputLayers:
+            layerScript = []
             script = template.format(
                 index = i
             )
-            scripts.append(script)
+            layerScript.append(script)
             if o.isMain == True:
-                scripts.append(main)
-            scripts.append(static)
+                layerScript.append(main)
+            layerScript.append("{0}")
+            layerScript.append(static)
 
             if o.hasTip == True or o.hasViz == True:
-                scripts.append(tip)
+                layerScript.append(tip)
             else:
-                scripts.append(";\n\n")
-                
+                layerScript.append(";\n\n")
+            
+            scripts.append(o.firstSymbol.toLayerScript( "".join(layerScript) ) )    
             i += 1
     
-        return "".join(scripts)
-
-        
+        return "".join(scripts)       
     
     
 class outputLayer:
     """Details of layer details for the d3 map"""
     
-    def __init__(self, objName, name, averageWidth, main, hasTip, hasViz):
-        """Constructor"""
+    def __init__(self, objName, name, averageWidth, main, hasTip, hasViz, syms):
+        """Abstract object containing the details required during creation of the inddex.html file 
+               
+        :param objName: Abstract key for the layer in the form "l" + index in output.
+        :type objName: str
+        
+        :param name: The name given to the layer in the QGIS legend
+        :type name: str
+        
+        :param averageWidth: Average outline width for items in the layer
+        :type averageWidth: float
+        
+        :param main: Is this the main layer for the visualisation?
+        :type main: bool
+        
+        :param hasTip: Does this visualisation include tool tips?
+        :type hasTip: bool
+        
+        :param hasViz: Does this visualisation include charts?
+        :type hasViz: bool
+        
+        :param syms: Symbols used in this layer (only interested in the first symbol as d3 does not allow for different symbol types on a single layer)
+        :type syms: array of d3MapRenderer.symbology.singleSymbol (or inherited object)
+        """
         self.objName = objName
         self.name = name
         self.isMain = main
         self.hasTip = hasTip
         self.hasViz = hasViz
         self.strokeWidth = averageWidth
+        # TODO: Attach renderer object and all symbols
+        self.firstSymbol = syms[0].symbol
+        
+        
