@@ -401,8 +401,7 @@ class outFormat(object):
     def createLegend(self):
         """Add a call to the JavaScript function to add a legend"""           
         if self.outVars.hasLegend:
-            template = """      }}
-      var legend = d3.legend({s})
+            template = """      var legend = d3.legend({s})
         .csv("data/legend.csv")
         .position({p})
         .shape(RECT);
@@ -572,7 +571,7 @@ class geoJson(outFormat):
     
         return "".join(scripts)
     
-    def createVectorFeatures(self):
+    def createVectorFeatures(self, selectedProjection):
         """Create the polygon vector features"""
         scripts = []
         template = """      vector{index} = vectors{index}.selectAll("path").data(object{index}.features);
@@ -600,7 +599,7 @@ class geoJson(outFormat):
             else:
                 layerScript.append(";\n\n")
             
-            scripts.append(o.firstSymbol.toLayerScript( "".join(layerScript) ) )    
+            scripts.append(o.firstSymbol.toLayerScript( "".join(layerScript), selectedProjection.safeCentroid  ) )    
             i += 1
     
         return "".join(scripts)       
