@@ -507,14 +507,18 @@ class model:
         dest = "source.zip"
         path = self.getDestShpFolder(uid)
                 
-        zipf = zipfile.ZipFile(os.path.join(path, dest), "w")
-        for root, dirs, files in os.walk(path):
-            for file in files:
-                if file != dest:
-                    filePath = os.path.join(root, file)
-                    zipf.write(filePath, file)
-                    os.remove(filePath)
-        zipf.close()
+        try:
+            zipf = zipfile.ZipFile(os.path.join(path, dest), "w")
+            for root, dirs, files in os.walk(path):
+                for file in files:
+                    if file != dest:
+                        filePath = os.path.join(root, file)
+                        zipf.write(filePath, file)
+                        os.remove(filePath)
+            zipf.close()
+        except:
+            self.__logger.error2()
+            pass
             
     def isWindows(self):
         """Windows OS?"""
