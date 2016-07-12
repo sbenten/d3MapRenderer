@@ -168,9 +168,9 @@ class simpleLineSymbol(symbol):
             self.color = parentSymbol.color().name()
             self.colorTrans = self.cssHelper.convertColorTransToCssOpacity(parentSymbol.color().alpha())
             self.symbolTrans = parentSymbol.alpha()
-            self.outlineWidth = parentSymbol.width()
-            self.outlineColor = parentSymbol.color().name()
-            self.outlineTrans = self.cssHelper.convertColorTransToCssOpacity(parentSymbol.color().alpha())
+            self.outlineWidth = parentSymbol.symbolLayer(0).width()
+            self.outlineColor = parentSymbol.symbolLayer(0).color().name()
+            self.outlineTrans = self.cssHelper.convertColorTransToCssOpacity(parentSymbol.symbolLayer(0).color().alpha())
             self.outlineStyle = parentSymbol.symbolLayer(0).penStyle()
         except (AttributeError, TypeError):
             self.__logger.error2()
@@ -346,9 +346,7 @@ class simpleMarkerSymbol(symbol):
             d3Shape = "circle"
             
         return d3Shape
-    
-    
-
+       
 class simpleFillSymbol(symbol):
     
     def __init__(self, geoType, parentSymbol, index, cssClassName, layerTransparency):
@@ -684,23 +682,17 @@ class singleSymbol(object):
         
         elif p is QgsFillSymbolV2:
             if parentSymbol.symbolLayer(0) is not None:
-                #Examine the first symbolLayer
-                #c = type(parentSymbol.symbolLayer(0))
+                #Currently limited to the first symbolLayer
+                c = type(parentSymbol.symbolLayer(0))
                 
                 """ TODO: Implement more complex symbols"""
-                '''if c is QgsCentroidFillSymbolLayerV2:
+                if  c is QgsSimpleLineSymbolLayerV2: 
+                    return simpleLineSymbol(geoType, parentSymbol, index, cssClassName, layerTransparency)
+                else:
                     return simpleFillSymbol(geoType, parentSymbol, index, cssClassName, layerTransparency)
-                elif c is QgsGradientFillSymbolLayerV2:
-                    return simpleFillSymbol(geoType, parentSymbol, index, cssClassName, layerTransparency)
-                elif c is QgsShapeburstFillSymbolLayerV2:
-                    return simpleFillSymbol(geoType, parentSymbol, index, cssClassName, layerTransparency)
-                elif c is QgsLinePatternFillSymbolLayer:
-                    return simpleFillSymbol(geoType, parentSymbol, index, cssClassName, layerTransparency)
-                else:'''
-                return simpleFillSymbol(geoType, parentSymbol, index, cssClassName, layerTransparency)
             
             else:
-                return p 
+                return simpleFillSymbol(geoType, parentSymbol, index, cssClassName, layerTransparency) 
             
     def getFilterExpression(self):
         """Get the filter expression for selecting features based on their attribute"""
