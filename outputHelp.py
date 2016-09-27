@@ -401,7 +401,8 @@ class outFormat(object):
     def createLegend(self):
         """Add a call to the JavaScript function to add a legend"""           
         if self.outVars.hasLegend:
-            template = """      var legend = d3.legend({s})
+            template = """      {e}
+      var legend = d3.legend({s})
         .csv("data/legend.csv")
         .position({p})
         .{f}("{a}");
