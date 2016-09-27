@@ -19,12 +19,6 @@
     }
 }(this, function (d3) {
 
-    // Public: Constant value for the rectangle shape
-    RECT = "rect";
-    // Public: Constant value for the ellipse shape
-    ELLIPSE = "ellipse";
-
-
     // Public - contructs a new legend
     //
     // Returns a legend
@@ -33,6 +27,7 @@
             csv = d3_legend_csv,
             position = d3_legend_position,
             shape = d3_legend_shape,
+            svgImg = d3_legend_svgimg,
             margin = d3_legend_margin,
             padding = d3_legend_padding,
             width = 0,
@@ -78,12 +73,25 @@
 
         // Public: sets or gets the shape for the legend
         //
-        // v - Constant string value of either RECT or ELLIPSE
+        // v - A d3.svg.symbol() with the type set, defauts to square
+        // e.g. -  d3.svg.symbol().type("square")
         //
         // Returns value or legend
         legend.shape = function (v) {
             if (!arguments.length) return shape;
             shape = v == null ? v : d3.functor(v);
+
+            return legend;
+        }
+        
+        // Public: sets or gets the svg image for the legend
+        //
+        // v - An Svg Image loaded as an Xml Document (for styling purposes)
+        //
+        // Returns value or legend
+        legend.svgImg = function (v) {
+            if (!arguments.length) return svgImg;
+            svgImg = v == null ? v : d3.functor(v);
 
             return legend;
         }
@@ -139,8 +147,9 @@
             // Get the largest width and height
             var max = getMaxSize(rows);
 
-            width = margin() + padding() + max[0];
-            height = margin() + padding() + max[1] * rows.length;
+            space = margin() + padding()
+            width = space + max[0];
+            height = space  + max[1] * rows.length;
 
             var items = g.selectAll(".legend")
               .data(rows)
@@ -150,12 +159,50 @@
               .attr("transform", function (d, i) { return "translate(0," + (i * max[1]) + ")"; });
 
             // Add the color swatch
-            var swatch = null;
-            if (shape() == ELLIPSE)
-                swatch = createEllipse(items, max);
-            else
-                swatch = createRect(items, max);
+            if (svgImg() != null) { 
+              d3.xml(svgImg(), "image/svg+xml", function(xml) {  
+                var img = document.importNode(xml.documentElement, true);
+                items.append("g")
+                  .attr("transform", function (d, i) { return "translate(" + max[0] + "," + max[1] + ")"; })
+                  .attr("width", function(d) { return d.Width })
+                  .attr("height", function(d) { return d.Height; })
+                  .each( function(d) { return loadImage(this, img, d.Color, d.Width); } );  
+                  
+                finish(g, rect, items, max);
+              });           
+            } else {
+              if (shape() != "circle")
+                space += padding()
+            
+              if (shape() == "line"){
+                createLine(items, max);
+              } else {
+                items.append("path")
+                  .attr("d", d3.svg.symbol().type(shape()).size( function(d) { return d.Width; }  ))
+                  .attr("transform", function (d, i) { return "translate(" + space + "," + max[1] + ")"; })
+                  .attr("class", function (d) { return d.Color; });  
+              }  
+              finish(g, rect, items, max);
+            }
+        }
+        
+        // Private: Create a set of lines
+        function createLine(items, max) {
+            var x1 = margin() + padding();
+            var x2 = x1 + 20;
+            var y = 10 + (max[1] / 2);
+            
+            return items.append("line")
+                .attr("x1", x1)
+                .attr("y1", y)
+                .attr("x2", x2)
+                .attr("y2", y)
+                .attr("class", function (d) { return d.Color; });
+        }
 
+        
+        // Private: Complete rendering  - split to cope with async function calls
+        function finish(g, rect, items, max){
             // Add the textual prompt
             var txt = items.append("text")
               .attr("x", function (d) { return getTextX(max[0]); })
@@ -170,11 +217,13 @@
                     textWidth = bbox.width;
             }
 
-            reposition(g, rect, max[1])
+            reposition(g, rect, max[1]);
+            
         }
 
+        // Private: Reposition legend background
         function reposition(obj, rect, maxH) {
-            // get the hodting svg node
+            // get the holding svg node
             var s = svg.getBoundingClientRect();
 
             // get the legend grouping node 
@@ -190,16 +239,16 @@
             switch (position()) {
                 case 1:
                     // top right
-                    x = s.width - g.width - (margin() * 4);
+                    x = s.width - g.width - (margin() * 2) - (padding() * 2);
                     break;
                 case 2:
                     // bottom right
-                    x = s.width - g.width - (margin() * 4);
-                    y = s.height - g.height - (margin() * 4);
+                    x = s.width - g.width - (margin() * 2) - (padding() * 2);
+                    y = s.height - g.height - (margin() * 2) - (padding() * 2);
                     break;
                 case 3:
                     // bottom left
-                    y = s.height - g.height - (margin() * 4);
+                    y = s.height - g.height - (margin() * 2) - (padding() * 2);
                     break;
                 case 4:
                     // external - adjust svg to size of contents
@@ -228,11 +277,23 @@
             // move the legend items
             var items = obj.selectAll(".legend")
               .attr("transform", function (d, i) { return "translate(" + (x - margin()) + "," + (y + (i * maxH) - margin()) + ")"; });
-        }        
+        }     
+
+        //Private: Load an Svg Image from Xml
+        function loadImage(parent, child, css, size){
+          var str = "{0}px".replace("{0}", size == "null" ? 0 : size);
+          var n = parent.appendChild(child.cloneNode(true)); 
+          d3.select(n)
+            .attr("width", str)
+            .attr("height", str)
+            .attr("x", -size / 2)
+            .attr("y", -size / 2)
+            .attr("class", css);
+        }       
 
         // Private: get the max width and height
         function getMaxSize(rows) {
-            var max = [0, 0];
+            var max = [20, 20];
             var x = 0;
             for (x in rows) {
                 if (max[0] < rows[x].Width)
@@ -254,66 +315,6 @@
             return margin() + (padding() * 2) + (maxH / 2);
         }
 
-        // Private: Create a set of rectangles
-        function createRect(items, max) {
-            return items.append("rect")
-                .attr("x", function (d) { return getRectX(d.Width, max[0]); })
-                .attr("y", function (d) { return getRectY(d.Height, max[1]); })
-                .attr("width", function (d) { return getRectWidth(d.Width); })
-                .attr("height", function (d) { return getRectHeight(d.Height); })
-                .attr("class", function (d) { return d.Color; });
-        }
-
-        // Private: Get the rectangle X position
-        function getRectX(v, maxW) {
-            return margin() + padding() + ((maxW - +v) / 2);
-        }
-
-        // Private: Get the rectangle Y position
-        function getRectY(v, maxH) {
-            return margin() + padding() + ((maxH - +v) / 2);
-        }
-
-        // Private: Get the rectangle width
-        function getRectWidth(v) {
-            return +v;
-        }
-
-        // Private: Get the rectangle height
-        function getRectHeight(v) {
-            return +v;
-        }
-
-        // Private: Create a set of ellipses
-        function createEllipse(items, max) {
-            return items.append("ellipse")
-                .attr("cx", function (d) { return getEllipseX(max[0]); })
-                .attr("cy", function (d) { return getEllipseY(max[1]); })
-                .attr("rx", function (d) { return getEllipseRX(d.Width); })
-                .attr("ry", function (d) { return getEllipseRY(d.Height); })
-                .attr("class", function (d) { return d.Color; });
-        }
-
-        // Private: Get the ellipse X position
-        function getEllipseX(maxW) {
-            return margin() + padding() + maxW / 2;
-        }
-
-        // Private: Get the ellipse Y position
-        function getEllipseY(maxH) {
-            return margin() + padding() + maxH / 2;
-        }
-
-        // Private: Get the ellipse radius for the X axis
-        function getEllipseRX(v) {
-            return +v / 2;
-        }
-
-        // Private: Get the ellipse radius for the Y axis
-        function getEllipseRY(v) {
-            return +v / 2;
-        }
-
         // Private: Get the SVG element
         function getSVGNode(el) {
             el = el.node()
@@ -325,11 +326,13 @@
 
         //-Default methods--------------------------------
 
-        function d3_legend_csv() { return ''; }
+        function d3_legend_csv() { return ""; }
 
         function d3_legend_position() { return 1; }
 
-        function d3_legend_shape() { return legend.RECT; }
+        function d3_legend_shape() { return "square"; }
+        
+        function d3_legend_svgimg() { return null; }
 
         function d3_legend_margin() { return 5; }
 

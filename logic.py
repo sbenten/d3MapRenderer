@@ -431,26 +431,35 @@ class model:
             f.close()
             
     def writeLegendFile(self, uid, syms):
-        """Write the legend for the main layer"""
-        n = self.getDestLegendFile(uid)
-        f = codecs.open(n, "a", "utf-8")
-        #for  now a fixed width and height for the legend
-        template = u"20,20,{0},{1}\n"
-        try:
-            if syms is not None:
+        """Write the legend for the main layer
+        Output limited to Graduated and Categorized renderers"""
+        
+        '''Note: Only check the actual object, not derived types due to inheritance hierarchy'''
+        if syms is not None and len(syms) > 0 and type(syms[0]) != singleSymbol :
+            n = self.getDestLegendFile(uid)
+            f = codecs.open(n, "a", "utf-8")
+            #for  now a fixed width and height for the legend
+            template = u"{w},{h},{c},{t}\n"
+            try:
+                
                 f.write("Width,Height,Color,Text\n");
                 for sym in syms:
-                    uCss = unicode(sym.symbol.css)
-                    uText = self.safeCsvUnicode(sym.label, False)
-                    
-                    f.write(template.format(uCss, uText));
-                    
-        except Exception as e:
-            # don't leave open files 
-            self.__logger.error("Exception\r\n" + traceback.format_exc(None))
-            raise e
-        finally:
-            f.close()
+                    if len(sym.label.strip()) > 0:
+                        uCss = unicode(sym.symbol.css)                    
+                        uText = self.safeCsvUnicode(sym.label, False)
+                        
+                        f.write(template.format(
+                                                w = sym.symbol.legendWidth,
+                                                h = sym.symbol.legendHeight,
+                                                c = uCss, 
+                                                t = uText));
+                        
+            except Exception as e:
+                # don't leave open files 
+                self.__logger.error("Exception\r\n" + traceback.format_exc(None))
+                raise e
+            finally:
+                f.close()
     
     def safeCsvString(self, obj, idField):
         """Make a string safe from commas and NULLS"""

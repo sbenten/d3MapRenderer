@@ -48,7 +48,7 @@ class symbol(object):
         self.cssHelper = css3()
         self.index = index
         self.css = cssClassName
-        self.size = "0"
+        self.size = "20"
         self.color = "#000000"
         self.colorTrans = 255
         self.symbolTrans = 1.0
@@ -58,6 +58,8 @@ class symbol(object):
         self.outlineTrans = 1.0
         self.brushStyle = 1
         self.path = u""
+        self.legendWidth = "20"
+        self.legendHeight = "20"
 
     def getOpacity(self):
         """Get the opacity for the range"""
@@ -121,6 +123,11 @@ class symbol(object):
         """
         return ""
     
+    def getShape(self):
+        """Retrieve the d3 equivalent shape"""
+        return "square"
+    
+    
 class simpleLineSymbol(symbol):
     
     def __init__(self, geoType, parentSymbol, index, cssClassName, layerTransparency):
@@ -155,7 +162,11 @@ class simpleLineSymbol(symbol):
         self.outlineStyle = None
         self.outlineTrans = 1.0
         self.brushStyle = 1
+        self.legendWidth = "20"
+        self.legendHeight = "20"
+        
         self.readStyles(parentSymbol)
+
        
     def readStyles(self, parentSymbol):
         """Read the styles properties from the layer and store for later use
@@ -172,6 +183,9 @@ class simpleLineSymbol(symbol):
             self.outlineColor = parentSymbol.symbolLayer(0).color().name()
             self.outlineTrans = self.cssHelper.convertColorTransToCssOpacity(parentSymbol.symbolLayer(0).color().alpha())
             self.outlineStyle = parentSymbol.symbolLayer(0).penStyle()
+            self.size = str(self.outlineWidth)
+            self.legendHeight = self.size
+            
         except (AttributeError, TypeError):
             self.__logger.error2()
             pass    
@@ -188,7 +202,11 @@ class simpleLineSymbol(symbol):
         
         self.__logger.info(output)
         
-        return output       
+        return output    
+    
+    def getShape(self):
+        """Retrieve the d3 equivalent shape"""
+        return "line"
 
 class simpleMarkerSymbol(symbol):
     
@@ -225,6 +243,9 @@ class simpleMarkerSymbol(symbol):
         self.outlineStyle = None
         self.outlineTrans = 1.0
         self.brushStyle = 1
+        self.legendWidth = "20"
+        self.legendHeight = "20"
+        
         self.readStyles(parentSymbol)
         
     def readStyles(self, parentSymbol):
@@ -240,11 +261,13 @@ class simpleMarkerSymbol(symbol):
             '''No width property in a simple marker
             self.outlineWidth = parentSymbol.width()'''
             ''' d3 symbols are sized 64 by default '''
-            self.size = str(parentSymbol.size()  * 8)           
+            self.size = str(parentSymbol.size())           
             self.outlineColor = parentSymbol.symbolLayer(0).outlineColor().name()
             self.outlineTrans = self.cssHelper.convertColorTransToCssOpacity(parentSymbol.symbolLayer(0).outlineColor().alpha())
             self.outlineStyle = parentSymbol.symbolLayer(0).outlineStyle()
             self.name = parentSymbol.symbolLayer(0).name()
+            self.legendHeight = self.size
+            
         except (AttributeError, TypeError):
             self.__logger.error2()
             pass
@@ -320,7 +343,7 @@ class simpleMarkerSymbol(symbol):
           g.style("display", null);
         }}
         g.attr("transform", "translate(" + (centroid[0] - (d.properties.d3S / projection.scale() / 2)) + "," + (centroid[1] - (d.properties.d3S / projection.scale() / 2)) + ")")        
-         .attr("d", d3.svg.symbol().type("{sym}").size( function(d) { return d.properties.d3S; }  ));
+         .attr("d", d3.svg.symbol().type("{sym}").size( function(d) {{ return d.properties.d3S; }}  ));
       }});\n"""
         
         return template.format(
@@ -329,7 +352,7 @@ class simpleMarkerSymbol(symbol):
                                cent = centroid)
         
     def getShape(self):
-        """Retrieve the d3 equivelent shape"""
+        """Retrieve the d3 equivalent shape"""
         d3Shape = "circle"
         
         if self.name == "cross":
@@ -372,7 +395,7 @@ class simpleFillSymbol(symbol):
         self.cssHelper = css3()
         self.index = index
         self.css = cssClassName
-        self.size = ""
+        self.size = "20"
         self.color = "#000000"
         self.colorTrans = 255
         self.symbolTrans = 1.0
@@ -381,6 +404,9 @@ class simpleFillSymbol(symbol):
         self.outlineStyle = None
         self.outlineTrans = 1.0
         self.brushStyle = 1
+        self.legendWidth = "20"
+        self.legendHeight = "20"
+        
         self.readStyles(parentSymbol)
        
     def readStyles(self, parentSymbol):
@@ -454,7 +480,11 @@ class svgMarkerSymbol(symbol):
         self.outlineStyle = 1
         self.outlineTrans = 1.0
         self.brushStyle = 1
+        self.legendWidth = "20"
+        self.legendHeight = "20"
+        
         self.readStyles(parentSymbol)
+        
         
     def readStyles(self, parentSymbol):
         """Read the styles properties from the layer and store for later use
@@ -471,6 +501,9 @@ class svgMarkerSymbol(symbol):
             self.outlineColor = parentSymbol.symbolLayer(0).outlineColor().name()
             self.outlineTrans = self.cssHelper.convertColorTransToCssOpacity(parentSymbol.symbolLayer(0).outlineColor().alpha())
             self.path = parentSymbol.symbolLayer(0).path()
+            self.legendWidth = self.size
+            self.legendHeight = self.size
+            
         except (AttributeError, TypeError):
             self.__logger.error2()
             pass

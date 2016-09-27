@@ -404,12 +404,29 @@ class outFormat(object):
             template = """      var legend = d3.legend({s})
         .csv("data/legend.csv")
         .position({p})
-        .shape(RECT);
+        .{f}("{a}");
       {s}.call(legend);"""
+      
+# TODO: .shape to be altered to svgImg or d3 shape
+# TODO: Legend margin not correct when align to RHS
 
+            func = "shape"
+            arg = "square"
+            
+            # Find the main layer and check the first symbol to determine the correct JS function call
+            for i, o in enumerate(self.outVars.outputLayers):
+                if o.isMain == True:
+                    if o.firstSymbol.hasImage() == True:
+                        func = "svgImg"
+                        head, tail = os.path.split(o.firstSymbol.path)
+                        arg = "img/{0}".format(tail)
+                    else:
+                        arg = o.firstSymbol.getShape()    
+                
             ext = ""
             svg = "svg"
             pos = self.outVars.selectedLegendPosition
+            
                   
             if self.outVars.selectedLegendPosition == 4:
                 # external legend has to have a different hosting svg element
@@ -420,6 +437,8 @@ class outFormat(object):
             # format and return
             return template.format(
                 e = ext,
+                f = func,
+                a = arg,
                 s = svg,
                 p = pos
             )
