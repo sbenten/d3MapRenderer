@@ -407,9 +407,6 @@ class outFormat(object):
         .position({p})
         .{f}("{a}");
       {s}.call(legend);"""
-      
-# TODO: .shape to be altered to svgImg or d3 shape
-# TODO: Legend margin not correct when align to RHS
 
             func = "shape"
             arg = "square"

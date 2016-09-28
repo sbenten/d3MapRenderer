@@ -7,6 +7,18 @@ class chart(object):
         self.name = ""
         self.c3Name = ""
         self.stacked = False
+
+    def getMinFields(self):
+        """Minimum limit for the amount of fields in a viz"""
+        return 1 
+
+    def getMaxFields(self):
+        """Maximum limit for the amount of fields in a viz"""
+        return 999 # Come on, you're using the wrong tech if you want to exceed this
+    
+    def getFieldErrMessage(self):
+        """The error message given when the wrong amount of fields are selected"""
+        return "requires at least one field in a data range"
         
     def getStackingScript(self, ranges):
         """Get the javascript for stacking the ranges on top of each other
@@ -49,6 +61,7 @@ class chart(object):
         lmin = []
         lmax = []
         
+        rmin = 0
         rmax = 0
         
         for r in ranges:
@@ -57,12 +70,14 @@ class chart(object):
                 lmin.append(main.minimumValue(index))
                 lmax.append(main.maximumValue(index))
             
-        rmin = min(lmin)   
-        if self.stacked == True:
-            # stacked charts require the total of the values on the y axis 
-            rmax = sum(lmax) 
-        else:
-            rmax = max(lmax)
+        if len(lmin) > 0:
+            min(lmin)   
+        if len(lmax) > 0:
+            if self.stacked == True:
+                # stacked charts require the total of the values on the y axis 
+                rmax = sum(lmax) 
+            else:
+                rmax = max(lmax)
             
         return rmin, rmax      
     
@@ -209,36 +224,6 @@ class chart(object):
 
         return value
         
-class line(chart):
-    """Line chart"""
-    
-    def __init__(self):
-        """Constructor"""
-        chart.__init__(self)
-        self.name = "Line Chart"
-        self.c3Name = "line"
-
-
-class spline(chart):
-    """Spline chart"""
-    
-    def __init__(self):
-        """Constructor"""
-        chart.__init__(self)
-        self.name = "Spline Chart"
-        self.c3Name = "spline"
-        
-            
-class step(chart):
-    """Step chart"""
-    
-    def __init__(self):
-        """Constructor"""
-        chart.__init__(self)
-        self.name = "Step Chart"
-        self.c3Name = "step"
-        
-        
 class area(chart):
     """Area chart"""
     
@@ -247,27 +232,7 @@ class area(chart):
         chart.__init__(self)
         self.name = "Area Chart"
         self.c3Name = "area"
-
-
-class splinearea(chart):
-    """Spline area chart"""
-    
-    def __init__(self):
-        """Constructor"""
-        chart.__init__(self)
-        self.name = "Spline Area Chart"
-        self.c3Name = "area-spline"
         
-class steparea(chart):
-    """Stepped area chart"""
-    
-    def __init__(self):
-        """Constructor"""
-        chart.__init__(self)
-        self.name = "Step Area Chart"
-        self.c3Name = "area-step"
-        
-     
 class bar(chart):
     """Bar chart"""
     
@@ -277,19 +242,6 @@ class bar(chart):
         self.name = "Bar Chart"
         self.c3Name = "bar"
         
-# TODO: UI needs altering so only one attribute can be selected per range and a 
-# warning given to the user if they try and select more than one
-class pie(chart):
-    """Pie chart"""
-    
-    def __init__(self):
-        """Constructor"""
-        chart.__init__(self)
-        self.name = "Pie Chart"
-        self.c3Name = "pie"
-        
-# TODO: UI needs altering so only one attribute can be selected per range and a 
-# warning given to the user if they try and select more than one
 class donut(chart):
     """Donut chart"""
     
@@ -307,6 +259,97 @@ class gauge(chart):
         chart.__init__(self)
         self.name = "Gauge Chart"
         self.c3Name = "gauge" 
+        
+    def getMaxFields(self):
+        """Limit for the amount of fields in a viz"""
+        return 1
+    
+    def getFieldErrMessage(self):
+        """The error message given when the wrong amount of fields are selected"""
+        return "requires only one field to be in a data range"
+        
+class line(chart):
+    """Line chart"""
+    
+    def __init__(self):
+        """Constructor"""
+        chart.__init__(self)
+        self.name = "Line Chart"
+        self.c3Name = "line"
+
+class pie(chart):
+    """Pie chart"""
+    
+    def __init__(self):
+        """Constructor"""
+        chart.__init__(self)
+        self.name = "Pie Chart"
+        self.c3Name = "pie"
+        
+class scatterplot(chart):        
+    """Stacked bar chart"""
+    
+    def __init__(self):
+        """Constructor"""
+        chart.__init__(self)
+        self.name = "Scatterplot"
+        self.c3Name = "scatter"
+
+class spline(chart):
+    """Spline chart"""
+    
+    def __init__(self):
+        """Constructor"""
+        chart.__init__(self)
+        self.name = "Spline Chart"
+        self.c3Name = "spline"
+
+class splinearea(chart):
+    """Spline area chart"""
+    
+    def __init__(self):
+        """Constructor"""
+        chart.__init__(self)
+        self.name = "Spline Area Chart"
+        self.c3Name = "area-spline"        
+            
+class step(chart):
+    """Step chart"""
+    
+    def __init__(self):
+        """Constructor"""
+        chart.__init__(self)
+        self.name = "Step Chart"
+        self.c3Name = "step"
+        
+class steparea(chart):
+    """Stepped area chart"""
+    
+    def __init__(self):
+        """Constructor"""
+        chart.__init__(self)
+        self.name = "Step Area Chart"
+        self.c3Name = "area-step"
+ 
+class stackedarea(chart):
+    """Stacked area chart"""
+    
+    def __init__(self):
+        """Constructor"""
+        chart.__init__(self)
+        self.name = "Stacked Area Chart"
+        self.c3Name = "area"
+        self.stacked = True  
+        
+class stackedbar(chart):
+    """Stacked bar chart"""
+    
+    def __init__(self):
+        """Constructor"""
+        chart.__init__(self)
+        self.name = "Stacked Bar Chart"
+        self.c3Name = "bar"
+        self.stacked = True 
         
 class stackedline(chart):
     """Stacked line chart"""
@@ -328,26 +371,6 @@ class stackedspline(chart):
         self.name = "Stacked Spline Chart"
         self.c3Name = "spline"
         self.stacked = True 
-                
-class stackedstep(chart):
-    """Stacked step chart"""
-    
-    def __init__(self):
-        """Constructor"""
-        chart.__init__(self)
-        self.name = "Stacked Step Chart"
-        self.c3Name = "step"
-        self.stacked = True 
- 
-class stackedarea(chart):
-    """Stacked area chart"""
-    
-    def __init__(self):
-        """Constructor"""
-        chart.__init__(self)
-        self.name = "Stacked Area Chart"
-        self.c3Name = "area"
-        self.stacked = True  
         
 class stackedsplinearea(chart):
     """Stacked splinee area chart"""
@@ -358,6 +381,16 @@ class stackedsplinearea(chart):
         self.name = "Stacked Spline Area Chart"
         self.c3Name = "area-spline"
         self.stacked = True
+                        
+class stackedstep(chart):
+    """Stacked step chart"""
+    
+    def __init__(self):
+        """Constructor"""
+        chart.__init__(self)
+        self.name = "Stacked Step Chart"
+        self.c3Name = "step"
+        self.stacked = True 
         
 class stackedsteparea(chart):
     """Stacked step area chart"""
@@ -368,30 +401,7 @@ class stackedsteparea(chart):
         self.name = "Stacked Step Area Chart"
         self.c3Name = "area-step"
         self.stacked = True 
-        
-class stackedbar(chart):
-    """Stacked bar chart"""
-    
-    def __init__(self):
-        """Constructor"""
-        chart.__init__(self)
-        self.name = "Stacked Bar Chart"
-        self.c3Name = "bar"
-        self.stacked = True 
-        
-# TODO: Scatterplot requires some UI work to get the X and Y ranges forced on the user
-# Would require the user to create ranges in pairs
-'''class scatterplot(chart):        
-    """Stacked bar chart"""
-    
-    def __init__(self):
-        """Constructor"""
-        
-        self.name = "Scatterplot"
-        self.c3Name = "scatter"'''
-
-       
-    
+         
                        
 
 class dataRanges(list):

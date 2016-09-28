@@ -155,6 +155,10 @@ class model:
             if name in self.__tempVizFields:
                 self.__tempVizFields.remove(name)
                 
+    def resetSelectedVizFields(self):
+        """Reset the currently selected viz fields"""
+        self.__tempVizFields[:] = []
+                
     def getCurrentRangeLength(self):
         """Check the length of the current data range"""
         return len(self.__tempVizFields)
@@ -168,7 +172,8 @@ class model:
                 data.appendField(f)
                 
             self.__ranges.append(data)
-            self.__tempVizFields[:] = []
+            self.resetSelectedVizFields()
+            
             
     def getPopupTemplate(self):
         """Return the preview of the html popup"""
@@ -876,7 +881,7 @@ class vector:
             self.fields.append(f.name()) 
             
             # Add numeric fields to the list for visualization
-            if f.typeName() == "Integer" or f.typeName() == "Real":
+            if f.typeName().lower() == "integer" or f.typeName().lower() == "real" or f.typeName().lower() == "integer64":
                 self.vizFields.append(f.name())
             
             # An ID field? Set the default for the ID field option    

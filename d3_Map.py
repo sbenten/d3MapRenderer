@@ -358,6 +358,7 @@ class d3MapRenderer:
         
         if wipe == True:
             self.model.resetRanges()
+            self.model.resetSelectedVizFields()
             self.dlg.vizLabelsLineEdit.clear()
                
         # create a root node in the tree
@@ -605,16 +606,29 @@ class d3MapRenderer:
         
     def addVizRange(self):
         """Add the selected fields as a data range"""
-        if self.model.getCurrentRangeLength() > 0:
-            text, ok = QInputDialog.getText(self.dlg,
-                                            "Data range name",
-                                            "Provide a name for the data range",
-                                            QLineEdit.Normal, 
-                                            "DataRange" + str(self.model.getRangeCount() + 1))
-            if ok == True:
-                self.model.addCurrentRange(text) 
-                self.alterVizPreview()  
-        
+        items = self.model.getCurrentRangeLength()
+        if items > 0:
+            if items < self.model.selectedVizChart.getMinFields() or items > self.model.selectedVizChart.getMaxFields():
+                # Failed the input validation
+                QMessageBox.warning(self.dlg, 
+                            "Wrong number of fields",
+                            "A {0} {1}".format(self.model.selectedVizChart.name, self.model.selectedVizChart.getFieldErrMessage()), 
+                            buttons=QMessageBox.Ok,
+                            defaultButton=QMessageBox.NoButton)
+                                    
+            else:
+                text, ok = QInputDialog.getText(self.dlg,
+                                                "Data range name",
+                                                "Provide a name for the data range",
+                                                QLineEdit.Normal, 
+                                                "DataRange" + str(self.model.getRangeCount() + 1))
+                if ok == True:
+                    self.model.addCurrentRange(text) 
+                    self.alterVizPreview()  
+                
+                
+                
+                
     def alterVizPreview(self):
         """UI changes required for viz updates"""
         # Redraw the tree
@@ -642,6 +656,8 @@ class d3MapRenderer:
     def changedVizTypeComboBox(self):
         """Keep the selected chart in sync with the model"""
         self.model.selectedVizChart = self.dlg.vizTypeComboBox.itemData(self.dlg.vizTypeComboBox.currentIndex())
+        # Wipe any existing data ranges
+        self.populateVizTreeWidget(True)
         
     def changedVizWidth(self):
         """Store the chart width in the model"""
