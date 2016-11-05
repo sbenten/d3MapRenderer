@@ -214,8 +214,7 @@ class winHelper(linuxHelper):
         """Attempt to get the install location of nodejs"""
         
         # NodeJs could be installed anywhere and called anything so can't rely on 
-        # the path variable ending with "nodejs" as is seen on a default install
-        # Luckily on WIndows it is a Windows Installer Package
+        # Try the Current User InstallPath
         subname = os.path.normpath("Software/node.js")
         valName = "InstallPath"
         found = False
@@ -236,6 +235,32 @@ class winHelper(linuxHelper):
                 i += 1
         except WindowsError as e:
             self.__logger.error(e.args[1] + ": " + subname)
+        
+        if found == False:
+            # Later versions of the Node.JS installer have removed the previous location 
+            # in favour of the local machine  installed software  
+            subname = os.path.normpath("SOFTWARE/node.js")
+            try:
+                # Query the registry...
+                self.__logger.info("Query registry for " + os.path.join("HKEY_LOCAL_MACHINE", subname, valName))
+                subkey = self.reg.OpenKey(self.reg.HKEY_LOCAL_MACHINE, subname)
+                
+                i = 0
+                while 1:
+                    name, value, type = self.reg.EnumValue(subkey, i)
+                    if name == valName:
+                        self.node = os.path.join(value, "node.exe")
+                        self.__logger.info("node.js found at " + self.node)
+                        found = True
+                        break
+                    
+                    i += 1
+            except WindowsError as e:
+                self.__logger.error(e.args[1] + ": " + subname)                
+                
+                
+        
+        
         
         return found
         
