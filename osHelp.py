@@ -31,6 +31,7 @@ class linuxHelper:
     def __init__(self):
         """Constructor. Nothing special here"""
         self.__logger = log(self.__class__.__name__)
+        self.topoVersion = 1
         
     def hasTopojson(self):
         """Does this OS have topojson installed?
@@ -41,46 +42,47 @@ class linuxHelper:
         success = False
         
         try:
-            result = check_output(["which", "topojson"])
-            
-            self.__logger.info("which result " + result) 
-            
+            result = check_output(["which", "topojson"])            
+            self.__logger.info("which result " + result)             
             success = True             
         
-        except CalledProcessError:
-            
+        except CalledProcessError:            
             self.__logger.error2()           
+        
+        if sucess == False:    
+            try:
+                result = check_output(["which", "geo2topo"])            
+                self.__logger.info("which result " + result)  
+                self.topoVersion = 2           
+                success = True             
+            
+            except CalledProcessError:            
+                self.__logger.error2()  
             
         return success
     
-    def output(self, folder, out, name, shapefile, quantization, simplification, idProperty, properties):
-        """Output the shapefile as topojson, with a specific name, and simplification level
+    def output(self, folder, outFile, name, inFile, quantization, simplification):
+        """Output the geojson file as topojson
         
         :param folder: Folder to output the topojson file.
             Assumed that this folder has been created outside of this class
         :type folder: str
         
-        :param out: Name of the resulting topojson file. 
+        :param outFile: Name of the resulting topojson file. 
             ".json" will be added automatically as a suffix 
-        :type out: str
+        :type outFile: str
         
-        :param name: resulting topology.objects name.
-        :type name: str
+        :param name: Name of the topojson object. 
+        :type name: str        
         
-        :param shapefile: Path to the ESRI shapefile.
-        :type shapefile: str
+        :param inFile: Path to the GeoJson file.
+        :type inFile: str
         
         :param quantization: Maximum number of differentiable points along either dimension.
         :type quantization: str
         
         :param simplification: Precision threshold as string.
         :type simplification: str
-        
-        :param idProperty: Name of feature property to promote to geometry id.
-        :type idProperty: str
-        
-        :param properties: Feature properties to preserve.
-        :type properties: list  
               
         :returns: The message from topojson  
         :rtype: string         
@@ -88,27 +90,41 @@ class linuxHelper:
         result = ""
 
         args = []
-        args.append("topojson")
-        args.append("-o")
-        args.append(os.path.join(folder, out + ".json"))
-        if len(idProperty) > 0:
-            args.append("--id-property")
-            args.append(idProperty)
-        if len(properties) > 0:
-            args.append("-p")
-            args.append(",".join(properties))
-        if len(quantization) > 0:
-            args.append("-q")
-            args.append(quantization)
-        if len(simplification) > 0:
-            args.append("-s")
-            args.append(simplification)
-        args.append("--")
-        if len(name) > 0:
-            args.append(name + "=" + shapefile)
-        else:
-            args.append(shapefile)
         
+        if self.topoVersion == 1:
+            """Original topojson"""
+            args.append("topojson")
+            args.append("-o")
+            args.append(os.path.join(folder, outFile + ".json"))        
+            args.append("-p")
+            
+            if len(quantization) > 0:
+                args.append("-q")
+                args.append(quantization)
+            if len(simplification) > 0:
+                args.append("-s")
+                args.append(simplification)
+                
+            args.append("--")
+            args.append(name + "=" + inFile)
+        
+        if self.topoVersion == 2:    
+            """New version of topojson is a subset of the original functionality
+            as its been modularised. Now actually called goe2topo"""
+            args.append("geo2topo")
+            args.append(inFile) 
+            args.append(">")
+            args.append(name + "=")
+            args.append(os.path.join(folder, outFile + ".json"))        
+            args.append("-p")
+            
+            if len(quantization) > 0:
+                args.append("-q")
+                args.append(quantization)
+            if len(simplification) > 0:
+                args.append("-s")
+                args.append(simplification)              
+                  
         self.__logger.info(" ".join(args)) 
         
         result = check_output(args, stderr=STDOUT)
@@ -126,6 +142,7 @@ class winHelper(linuxHelper):
         """Constructor"""
         self.node = ""
         self.topojs = ""
+        self.topoVersion = 1
         self.__logger = log(self.__class__.__name__) 
         self.reg = __import__("_winreg")     
     
@@ -144,37 +161,31 @@ class winHelper(linuxHelper):
             
         return nodeFound and topoFound
     
-    def output(self, folder, out, name, shapefile, quantization, simplification, idProperty, properties):
-        """Output the shapefile as topojson, with a specific name, and simplification level
+    def output(self, folder, outFile, name, inFile, quantization, simplification):
+        """Output the geojson file as topojson
         
         :param folder: Folder to output the topojson file.
             Assumed that this folder has been created outside of this class
         :type folder: str
         
-        :param out: Name of the resulting topojson file. 
+        :param outFile: Name of the resulting topojson file. 
             ".json" will be added automatically as a suffix 
-        :type out: str
+        :type outFile: str
         
-        :param name: resulting topology.objects name.
+        :param name: Name of the topojson object. 
         :type name: str
         
-        :param shapefile: Path to the ESRI shapefile.
-        :type shapefile: str        
+        :param inFile: Path to the GeoJson file.
+        :type inFile: str
         
         :param quantization: Maximum number of differentiable points along either dimension.
         :type quantization: str
         
         :param simplification: Precision threshold as string.
         :type simplification: str
-        
-        :param idProperty: Name of feature property to promote to geometry id.
-        :type idProperty: str
-        
-        :param properties: Feature properties to preserve.
-        :type properties: list 
-        
+              
         :returns: The message from topojson  
-        :rtype: string       
+        :rtype: string         
         """
         result = ""
 
@@ -182,25 +193,39 @@ class winHelper(linuxHelper):
             args = []
             args.append(self.node)
             args.append(self.topojs)
-            args.append("-o")
-            args.append(os.path.join(folder, out + ".json"))
-            if len(idProperty) > 0:
-                args.append("--id-property")
-                args.append(idProperty)
-            if len(properties) > 0:
+            
+            if self.topoVersion == 1:
+                """Original topojson"""
+                args.append("-o")
+                args.append(os.path.join(folder, outFile + ".json"))        
                 args.append("-p")
-                args.append(",".join(properties))
-            if len(quantization) > 0:
-                args.append("-q")
-                args.append(quantization)
-            if len(simplification) > 0:
-                args.append("-s")
-                args.append(simplification)
-            args.append("--")
-            if len(name) > 0:
-                args.append(name + "=" + shapefile)
-            else:
-                args.append(shapefile)
+                
+                if len(quantization) > 0:
+                    args.append("-q")
+                    args.append(quantization)
+                if len(simplification) > 0:
+                    args.append("-s")
+                    args.append(simplification)
+                    
+                args.append("--")
+                args.append(name + "=" + inFile)
+
+            
+            if self.topoVersion == 2:    
+                """New version of topojson is a subset of the original functionality
+                as its been modularised. Now actually called goe2topo"""
+                args.append(inFile) 
+                args.append(">")
+                args.append(name + "=")
+                args.append(os.path.join(folder, outFile + ".json"))        
+                args.append("-p")
+                
+                if len(quantization) > 0:
+                    args.append("-q")
+                    args.append(quantization)
+                if len(simplification) > 0:
+                    args.append("-s")
+                    args.append(simplification) 
             
             self.__logger.info(" ".join(args)) 
                  
@@ -274,6 +299,7 @@ class winHelper(linuxHelper):
         valName = "PATH"
         npm = os.path.normpath("/npm")
         topopkg = os.path.normpath("node_modules/topojson/bin/topojson")
+        topopkg2 = os.path.normpath("node_modules/topojson/bin/geo2topo")
         found = False
         try:
             # Query the registry...
@@ -289,11 +315,21 @@ class winHelper(linuxHelper):
                     for p in paths:
                         # Is this the /npm value?
                         if p.endswith(npm):
-                            self.topojs = os.path.join(p, topopkg)
-                            self.__logger.info("topojson found at " + self.topojs)
-                            found = True
-                            break
-                    break
+                            temp = os.path.join(p, topopkg)
+                            if os.path.isfile(temp) == True:
+                                self.topojs = temp 
+                                self.topoVersion = 1
+                                self.__logger.info("topojson found at " + self.topojs)
+                                found = True
+                                break
+                            else:
+                                temp = os.path.join(p, topopkg2) 
+                                if os.path.isfile(temp) == True:
+                                    self.topojs = temp
+                                    self.topoVersion = 2
+                                    self.__logger.info("topojson found at " + self.topojs)
+                                    found = True
+                                    break
                 
                 i += 1
                 

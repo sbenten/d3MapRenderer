@@ -44,7 +44,7 @@ class outFormat(object):
         """Base Constructor"""
         self.name = u""
         self.extension = u".json"
-        
+
         self.outVars = None
         self.__logger = log(self.__class__.__name__)
     
@@ -500,6 +500,33 @@ class outFormat(object):
         
         f.write(outHtml)
         f.close()       
+        
+        
+    def convertToJson(self, destFolder, destPath, sourcePath, objName, simplification, idAttribute, preserveAttributes, precision):
+        """Output a shapefile to GeoJson"""          
+        path, name = os.path.split(destPath)
+        name, ext = os.path.splitext(name) 
+        
+        qgis = qgisWrapper()
+        qgisLayer = qgis.openShape(sourcePath, objName)
+        
+        # Combine the list of attributes to preserve
+        if idAttribute != "":
+            preserveAttributes.append(idAttribute)
+        
+        qgis.removeFields(qgisLayer, preserveAttributes)
+        
+        
+        QgsVectorFileWriter.writeAsVectorFormat(qgisLayer, 
+                                                destPath, 
+                                                "utf-8", 
+                                                qgis.getDefaultCrs(), 
+                                                "GeoJson", 
+                                                False, 
+                                                layerOptions=['COORDINATE_PRECISION={0}'.format(precision)])
+        
+        return objName, name
+        
 
 class topoJson(outFormat):
     """Functions required to parse the html index file for TopoJson"""
@@ -516,23 +543,34 @@ class topoJson(outFormat):
 
     def convertShapeFile(self, destFolder, destPath, sourcePath, objName, simplification, idAttribute, preserveAttributes):
         """Output a shapefile to topojson"""   
-        path, name = os.path.split(destPath)
-        name, ext = os.path.splitext(name)          
         
+        """To work with both version 1 and 2 of the topojson command line
+        first convert the shapefile to geojson and then convert to topojson""" 
+        
+        """1. Convert to GeoJson
+        Use a destination path with a *_geo.json name for the filename"""
+        path, file = os.path.split(destPath)
+        orig, ext = os.path.splitext(file) 
+        
+        geoDestPath = os.path.join(path, orig + "_geo" + ext)
+        
+        objName, name = self.convertToJson(destFolder, geoDestPath, sourcePath, objName, simplification, idAttribute, preserveAttributes, "15")        
+        
+         
+        
+        """2. Convert to TopoJson"""
         quantization = ""
         #if self.panZoom:
         #    quantization = "1e5"
-        
+         #folder, outFile, inFile, quantization, simplification
         result = self.osHelp.helper.output(destFolder, 
-                                name, 
+                                orig,
                                 objName, 
-                                sourcePath, 
+                                geoDestPath, 
                                 quantization,
-                                simplification, 
-                                idAttribute, 
-                                preserveAttributes)
+                                simplification)
             
-        return objName, name
+        return objName, orig
                          
 
 class geoJson(outFormat):
@@ -543,36 +581,12 @@ class geoJson(outFormat):
         self.name = u"GeoJson"
         self.extension = u".json"
         
-        self.__qgis = qgisWrapper()
         self.outVars = None    
         self.__logger = log(self.__class__.__name__)
 
     def convertShapeFile(self, destFolder, destPath, sourcePath, objName, simplification, idAttribute, preserveAttributes):
-        """Output a shapefile to GeoJson"""          
-        path, name = os.path.split(destPath)
-        name, ext = os.path.splitext(name) 
-        
-        qgisLayer = self.__qgis.openShape(sourcePath, objName)
-        
-        # Combine the list of attributes to preserve
-        if idAttribute != "":
-            preserveAttributes.append(idAttribute)
-        
-        self.__qgis.removeFields(qgisLayer, preserveAttributes)
-        
-        # Calculate precision from selected steradian / 15     
-        #precision = round(15 - (15 / len(self.steradians)) * (self.steradians.index(self.steradian) + 1))
-        
-        
-        QgsVectorFileWriter.writeAsVectorFormat(qgisLayer, 
-                                                destPath, 
-                                                "utf-8", 
-                                                self.__qgis.getDefaultCrs(), 
-                                                "GeoJson", 
-                                                False, 
-                                                layerOptions=['COORDINATE_PRECISION=15'])
-        
-        return objName, name
+        """Convert to default GeoJson"""
+        return self.convertToJson(destFolder, destPath, sourcePath, objName, simplification, idAttribute, preserveAttributes, "15")
         
     def createPolygonObjects(self):
         """Create the Svg polygon objects"""
