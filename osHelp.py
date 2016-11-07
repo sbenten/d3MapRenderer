@@ -112,18 +112,10 @@ class linuxHelper:
             """New version of topojson is a subset of the original functionality
             as its been modularised. Now actually called goe2topo"""
             args.append("geo2topo")
-            args.append(inFile) 
+            args.append(name + "=" + inFile) 
             args.append(">")
-            args.append(name + "=")
             args.append(os.path.join(folder, outFile + ".json"))        
-            args.append("-p")
-            
-            if len(quantization) > 0:
-                args.append("-q")
-                args.append(quantization)
-            if len(simplification) > 0:
-                args.append("-s")
-                args.append(simplification)              
+            args.append("-p")           
                   
         self.__logger.info(" ".join(args)) 
         
@@ -213,19 +205,11 @@ class winHelper(linuxHelper):
             
             if self.topoVersion == 2:    
                 """New version of topojson is a subset of the original functionality
-                as its been modularised. Now actually called goe2topo"""
-                args.append(inFile) 
+                as its been modularised. Now actually called geo2topo"""
+                args.append(name + "=" + inFile) 
                 args.append(">")
-                args.append(name + "=")
                 args.append(os.path.join(folder, outFile + ".json"))        
                 args.append("-p")
-                
-                if len(quantization) > 0:
-                    args.append("-q")
-                    args.append(quantization)
-                if len(simplification) > 0:
-                    args.append("-s")
-                    args.append(simplification) 
             
             self.__logger.info(" ".join(args)) 
                  
