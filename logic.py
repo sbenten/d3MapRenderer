@@ -294,7 +294,7 @@ class model:
         syms = layerSymbols()
         cssstub = self.getLayerObjectName(index)
         
-        css = cssstub + "r0"
+        css = u"{0}r0".format(cssstub)
         s = singleSymbol(geoType, renderer.symbol(), index, css, transparency)     
         syms.append(s)       
 
@@ -317,7 +317,7 @@ class model:
                 break
             
         for i, c in enumerate(renderer.categories()):
-            css = cssstub + "c" + str(i)
+            css = u"{0}c{1}".format(cssstub, str(i))
             s = categorized(geoType, field, fieldType, c, index, css, transparency)     
             syms.append(s)       
         
@@ -333,7 +333,7 @@ class model:
         syms = layerSymbols()
         
         for i, r in enumerate(renderer.ranges()):
-            css = cssstub + "r" + str(i)
+            css = u"{0}r{1}".format(cssstub, str(i))
             s = graduated(geoType, field, r, index, css, transparency)     
             syms.append(s)       
             
@@ -365,6 +365,7 @@ class model:
 
             # Commit the transaction
             layer.commitChanges()
+
             
     def getCanvasStyle(self):
         """Get the canvas background color"""
@@ -639,7 +640,9 @@ class model:
         
     def getLayerObjectName(self, index):
         """Get a unique layer name as an object within topojson"""
-        return "l" + str(index)
+        stub = u"l{0}"
+        
+        return stub.format(str(index))
     
     def getProgressTicks(self):
         """Get the amount of progress steps"""
