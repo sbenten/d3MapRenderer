@@ -2,7 +2,6 @@
 
 import math
 import sys
-from numpy.doc import indexing
 
 class projection(object):
     """Base class for a projection object"""
