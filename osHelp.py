@@ -32,6 +32,7 @@ class linuxHelper:
         """Constructor. Nothing special here"""
         self.__logger = log(self.__class__.__name__)
         self.topoVersion = 1
+        self.topoSimplify = u""
         
     def hasTopojson(self):
         """Does this OS have topojson installed?
@@ -54,8 +55,13 @@ class linuxHelper:
                 result = check_output(["which", "geo2topo"])            
                 self.__logger.info("which result " + result)  
                 self.topoVersion = 2           
-                success = True             
-            
+                success = True     
+                
+                simpTest = "toposimplify"
+                result = check_output(["which", simpTest])            
+                self.__logger.info("which result " + result)        
+                self.topoSimplify = simpTest
+                
             except CalledProcessError:            
                 self.__logger.error2()  
             
@@ -88,14 +94,14 @@ class linuxHelper:
         :rtype: string         
         """
         result = ""
-
+        outPath = os.path.join(folder, outFile + ".json")
         args = []
         
         if self.topoVersion == 1:
             """Original topojson"""
             args.append("topojson")
             args.append("-o")
-            args.append(os.path.join(folder, outFile + ".json"))        
+            args.append(outPath)        
             args.append("-p")
             
             if len(quantization) > 0:
@@ -114,14 +120,33 @@ class linuxHelper:
             args.append("geo2topo")
             args.append(name + "=" + inFile) 
             args.append(">")
-            args.append(os.path.join(folder, outFile + ".json"))        
+            args.append(outPath)        
             args.append("-p")           
                   
-        self.__logger.info(" ".join(args)) 
+        self.__logger.info(" ".join(args))         
+        result = check_output(args, stderr=STDOUT)        
+        self.__logger.info("topojson result " + result)         
         
-        result = check_output(args, stderr=STDOUT)
-        
-        self.__logger.info("topojson result " + result)              
+        if self.topoVersion == 2  and len(self.topoSimplify) > 0:  
+            """New version of simplification in a separate package"""
+            simpPath = os.path.join(folder, outFile + "_simp.json")
+            args = []
+            args.append(self.node)
+            args.append(self.toposimpjs)
+            args.append(outPath)  
+            args.append("-s")
+            args.append(simplification)
+            args.append("-o")
+            args.append(simpPath)
+            
+            self.__logger.info(" ".join(args)) 
+             
+            result2 = check_output(args, stderr=STDOUT, shell=True)
+            
+            """Success! (if it's got this far) Now delete the old file and 
+            rename the simplified version to replace it"""
+            os.remove(outPath)
+            os.rename(simpPath, outPath)     
             
         return result
     
@@ -132,9 +157,10 @@ class winHelper(linuxHelper):
     
     def __init__(self):
         """Constructor"""
-        self.node = ""
-        self.topojs = ""
+        self.node = u""
+        self.topojs = u""
         self.topoVersion = 1
+        self.topoSimplify = u""
         self.__logger = log(self.__class__.__name__) 
         self.reg = __import__("_winreg")     
     
@@ -180,8 +206,9 @@ class winHelper(linuxHelper):
         :rtype: string         
         """
         result = ""
-
+        
         if self.hasTopojson() == True:
+            outPath = os.path.join(folder, outFile + ".json")
             args = []
             args.append(self.node)
             args.append(self.topojs)
@@ -189,7 +216,7 @@ class winHelper(linuxHelper):
             if self.topoVersion == 1:
                 """Original topojson"""
                 args.append("-o")
-                args.append(os.path.join(folder, outFile + ".json"))        
+                args.append(outPath)        
                 args.append("-p")
                 
                 if len(quantization) > 0:
@@ -208,14 +235,36 @@ class winHelper(linuxHelper):
                 as its been modularised. Now actually called geo2topo"""
                 args.append(name + "=" + inFile) 
                 args.append(">")
-                args.append(os.path.join(folder, outFile + ".json"))        
+                args.append(outPath)        
                 args.append("-p")
             
             self.__logger.info(" ".join(args)) 
                  
             result = check_output(args, stderr=STDOUT, shell=True)
             
-            self.__logger.info("topojson result \r\n" + result)               
+            self.__logger.info("topojson result \r\n" + result)      
+            
+            if self.topoVersion == 2 and len(self.topoSimplify) > 0:  
+                """New version of simplification in a separate package"""
+                simpPath = os.path.join(folder, outFile + "_simp.json")
+                args = []
+                args.append(self.node)
+                args.append(self.topoSimplify)
+                args.append(outPath)  
+                args.append("-s")
+                args.append(simplification)
+                args.append("-o")
+                args.append(simpPath)
+                
+                self.__logger.info(" ".join(args)) 
+                 
+                result2 = check_output(args, stderr=STDOUT, shell=True)
+                
+                """Success! (if it's got this far) Now delete the old file and 
+                rename the simplified version to replace it"""
+                os.remove(outPath)
+                os.rename(simpPath, outPath)
+                   
             
         return result
     
@@ -265,11 +314,7 @@ class winHelper(linuxHelper):
                     
                     i += 1
             except WindowsError as e:
-                self.__logger.error(e.args[1] + ": " + subname)                
-                
-                
-        
-        
+                self.__logger.error(e.args[1] + ": " + subname)                        
         
         return found
         
@@ -284,6 +329,7 @@ class winHelper(linuxHelper):
         npm = os.path.normpath("/npm")
         topopkg = os.path.normpath("node_modules/topojson/bin/topojson")
         topopkg2 = os.path.normpath("node_modules/topojson/bin/geo2topo")
+        toposimppkg2 = os.path.normpath("node_modules/topojson-simplify/bin/toposimplify")
         found = False
         try:
             # Query the registry...
@@ -313,6 +359,13 @@ class winHelper(linuxHelper):
                                     self.topoVersion = 2
                                     self.__logger.info("topojson found at " + self.topojs)
                                     found = True
+                                    # Check for simplification pkg
+                                    temp = os.path.join(p, toposimppkg2) 
+                                    if os.path.isfile(temp) == True:
+                                        self.topoSimplify = temp
+                                        self.__logger.info("topojson-simplify found at " + self.topoSimplify) 
+                                    
+                                    
                                     break
                 
                 i += 1
