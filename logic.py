@@ -789,7 +789,7 @@ class vector:
         self.fields = []
         self.vizFields = []
         self.defaultId = ""        
-        self.hasLabel = self.hasLabels()
+        self.hasLabel = self.getBooleanProperty("labeling/enabled")   
         
         self.isVisible = iface.legendInterface().isLayerVisible(layer) 
         self.transparency = 1 - (float(layer.layerTransparency()) / 100)
@@ -822,11 +822,21 @@ class vector:
         """Is this a single renderer type?"""
         return self.rendererType == 0
     
-    def hasLabels(self):
-        """Check if the layer has labeling enabled"""
-        enabled = False
-        if self.layer.customProperty("labeling/enabled") != None:
-            enabled = self.layer.customProperty("labeling/enabled").lower() == "true"
-            
-        return enabled
+    def getBooleanProperty(self, prop):
+        """Not all booleans are treated equally"""
+        val = False
+        
+        try:
+            # A real boolean?
+            val = (self.layer.customProperty(prop, False) == True)
+        except AttributeError:
+            try:
+                # A text value for a boolean?
+                val = (self.layer.customProperty(prop, u"").lower() == "true")
+            except AttributeError:
+                self.__logger.info("No idea what the value for {0} is".format(prop))
+                pass
+            pass
+    
+        return val
         
