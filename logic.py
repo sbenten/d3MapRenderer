@@ -285,7 +285,7 @@ class model:
         syms = symbols()
         cssstub = self.getLayerObjectName(index)
         
-        css = cssstub + "r0"
+        css = u"{0}r0".format(cssstub)
         s = singleSymbol(geoType, renderer.symbol(), css, transparency)     
         syms.append(s)       
 
@@ -308,7 +308,7 @@ class model:
                 break
             
         for i, c in enumerate(renderer.categories()):
-            css = cssstub + "c" + str(i)
+            css = u"{0}c{1}".format(cssstub, str(i))
             s = categorizedSymbol(geoType, field, fieldType, c, css, transparency)     
             syms.append(s)       
         
@@ -324,7 +324,7 @@ class model:
         syms = symbols()
         
         for i, r in enumerate(renderer.ranges()):
-            css = cssstub + "r" + str(i)
+            css = u"{0}r{1}".format(cssstub, str(i))
             s = graduatedSymbol(geoType, field, r, css, transparency)     
             syms.append(s)       
             
