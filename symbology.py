@@ -113,7 +113,7 @@ class singleSymbol:
     
         return outlineWidth, outlineColor, outlineStyle, outlineTrans, brushStyle
         
-    def getFilterExpression(self):
+    def getFilterExpression(self, isLowest):
         """Get the filter expression for selecting features based on their attribute"""
         # Single symbols apply to every feature
         return ""
@@ -295,7 +295,7 @@ class categorizedSymbol(singleSymbol):
         
         self.outlineWidth, self.outlineColor, self.outlineStyle, self.outlineTrans, self.brushStyle = self.getOutlineDetails(range.symbol())
         
-    def getFilterExpression(self):
+    def getFilterExpression(self, isLowest):
         """Get the filter expression for selecting features based on their attribute"""
         if self.fieldType == "String" or self.fieldType == "Date":
             output = "\"{c}\" = '{v}'"
@@ -358,11 +358,15 @@ class graduatedSymbol(singleSymbol):
         
         self.outlineWidth, self.outlineColor, self.outlineStyle, self.outlineTrans, self.brushStyle = self.getOutlineDetails(range.symbol())
                     
-    def getFilterExpression(self):
+    def getFilterExpression(self, isLowest):
         """Get the filter expression for selecting features based on their attribute"""
-        output = "\"{c}\" >= {l} and \"{c}\" <= {h}"
+        lowRange = ">"
+        if isLowest == True:
+            lowRange = ">="
+        output = "\"{c}\" {e} {l} and \"{c}\" <= {h}"
         return output.format(
             c = self.field,
+            e = lowRange,
             l = self.lowValue,
             h = self.highValue)
     
