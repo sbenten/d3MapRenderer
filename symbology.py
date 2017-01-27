@@ -727,7 +727,7 @@ class singleSymbol(object):
             else:
                 return simpleFillSymbol(geoType, parentSymbol, index, cssClassName, layerTransparency) 
             
-    def getFilterExpression(self):
+    def getFilterExpression(self, isLowest):
         """Get the filter expression for selecting features based on their attribute"""
         # Single symbols apply to every feature
         return ""
@@ -774,7 +774,7 @@ class categorized(singleSymbol):
         self.value = str(category.value())
 
         
-    def getFilterExpression(self):
+    def getFilterExpression(self, isLowest):
         """Get the filter expression for selecting features based on their attribute"""
         if self.fieldType == "String" or self.fieldType == "Date":
             output = "\"{c}\" = '{v}'"
@@ -830,11 +830,16 @@ class graduated(singleSymbol):
         self.lowValue = graduation.lowerValue()
         self.highValue = graduation.upperValue()
                     
-    def getFilterExpression(self):
+    def getFilterExpression(self, isLowest):
         """Get the filter expression for selecting features based on their attribute"""
+        lowRange = ">"
+        if isLowest == True:
+            lowRange = ">="
+
         output = "\"{c}\" >= {l} and \"{c}\" <= {h}"
         return output.format(
             c = self.field,
+            e = lowRange,
             l = self.lowValue,
             h = self.highValue)
     

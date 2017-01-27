@@ -507,9 +507,11 @@ class process:
         layer.startEditing() 
         # Loop through each symbol
         if syms is not None:
+            i = 0
             for sym in syms:
-                filt = sym.getFilterExpression()
+                filt = sym.getFilterExpression((i == 0))
                 self.__logger.info("Filter: " + filt)
+                i += 1
                 
                 # Get the features with this particular symbology
                 features = None
