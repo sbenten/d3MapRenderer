@@ -23,6 +23,7 @@
 
 # Initialize Qt resources from file resources.py
 import os
+import sys
 import tempfile
 import resources_rc
 import traceback
@@ -39,6 +40,7 @@ from settings import globalSettings
 
 from logic import model
 from logger import log
+from layer import vector
 from tree import vectorItem, fieldItem
 from d3MapRenderer import settings
 from d3MapRenderer.outputHelp import topoJson, geoJson
@@ -80,6 +82,7 @@ class d3MapRenderer:
         self.settingsDlg = d3MapSettings(iface)
         
         # Init global objects
+        self.__logger = log(self.__class__.__name__)
         self.model = None
         self.settings = None
         self.webServerUrl = ""
@@ -676,6 +679,11 @@ class d3MapRenderer:
         folder = QFileDialog.getExistingDirectory(self.dlg, "Select Output Directory", folder, QFileDialog.ShowDirsOnly)
         if len(folder) > 0:
             self.dlg.outputEdit.setText(folder)
+            
+    def getCanvasBackground(self):
+        """Get the canvas background color"""
+        style = "#mapSvg{{background-color: {0};}}\n"
+        return style.format(self.iface.mapCanvas().canvasColor().name())
     
     def closeDialog(self):
         """Cancel clicked closed the dialog"""
@@ -703,8 +711,7 @@ class d3MapRenderer:
                
             except Exception as e:
                 # What? log and then re-throw
-                logger = log(self.__class__.__name__)
-                logger.error("Exception\r\n" + traceback.format_exc(None))
+                self.__logger.error("Exception\r\n" + traceback.format_exc(None))
                 raise e
             finally:
                 self.iface.messageBar().clearWidgets()
@@ -719,7 +726,7 @@ class d3MapRenderer:
             # Remove running instance. Only one at a time please
             self.closeDialog()
             
-        self.model = model(self.iface)
+        self.model = model(self.iface, self.getCanvasBackground())
         self.settings = globalSettings()
         self.setupUI()        
           
@@ -731,8 +738,25 @@ class d3MapRenderer:
         # Set UI state to match the model
         self.resetFields()
         
+        #log some details
+        self.__logger.info(QGis.QGIS_VERSION)
+        self.__logger.info(sys.version)
+        
         # build the model
-        self.model.setup()
+        """Get the vector layers from QGIS and perform other startup actions"""
+        # Reset
+        del self.model.vectors[:]
+        
+        layers = self.iface.legendInterface().layers()
+        found = False
+        for layer in layers:
+            if layer.type() == QgsMapLayer.VectorLayer and layer.rendererV2() is not None:
+                found = True
+                self.model.vectors.append(vector(self.iface, layer))
+                
+        # At __init__ the first in the list will be the main vector layer
+        if found == True:
+            self.model.vectors[0].main = True
         
         # attach events
         # logic tab

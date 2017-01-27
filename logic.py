@@ -13,7 +13,6 @@ import zipfile
 from qgis.core import *
 from qgis.gui import *
 from qgis.utils import *
-from logger import log
 from osHelp import osHelper
 from symbology import *
 from projections import *
@@ -24,9 +23,10 @@ from gisWrapper import *
 from labelHelper import labeling
 
 class model:
-    """Model for the UI"""
+    """Model for the UI
+    Contains abstractions of all the chosen options for output to d3"""
     
-    def __init__(self, iface):
+    def __init__(self, backgroundColor):
         """Initialise the model"""
         self.__logger = log(self.__class__.__name__)
         self.__colorField = "d3Css"
@@ -34,13 +34,8 @@ class model:
         self.__cssFile = "color.css"
         self.__selectedFields = []  
         self.__tempVizFields = [] 
-        self.__ranges = dataRanges()    
-        self.__qgis = qgisWrapper()   
-        
-        self.__logger.info(QGis.QGIS_VERSION)
-        self.__logger.info(sys.version)
-        
-        self.iface = iface
+        self.__ranges = dataRanges()     
+            
         self.title = u""
         self.showHeader = False
         self.width = 800
@@ -68,17 +63,18 @@ class model:
         self.vizLabels = []  
         self.selectedVizChart = None 
         self.vizWidth = 240
-        self.vizHeight = 240   
-        self.steradians = ["", 
-                           "1e-12", "2e-12", "3e-12", "4e-12", "5e-12", "6e-12", "7e-12", "8e-12", "9e-12", 
-                           "1e-11", "2e-11", "3e-11", "4e-11", "5e-11", "6e-11", "7e-11", "8e-11", "9e-11", 
-                           "1e-10", "2e-10", "3e-10", "4e-10", "5e-10", "6e-10", "7e-10", "8e-10", "9e-10", 
-                           "1e-9", "2e-9", "3e-9", "4e-9", "5e-9", "6e-9", "7e-9", "8e-9", "9e-9", 
-                           "1e-8", "2e-8", "3e-8", "4e-8", "5e-8", "6e-8", "7e-8", "8e-8", "9e-8", 
-                           "1e-7", "2e-7", "3e-7", "4e-7", "5e-7", "6e-7", "7e-7", "8e-7", "9e-7", 
-                           "1e-6", "2e-6", "3e-6", "4e-6", "5e-6", "6e-6", "7e-6", "8e-6", "9e-6", 
-                           "1e-5", "2e-5", "3e-5", "4e-5", "5e-5", "6e-5", "7e-5", "8e-5", "9e-5", 
-                           "1e-4", "2e-4", "3e-4", "4e-4", "5e-4", "6e-4", "7e-4", "8e-4", "9e-4", 
+        self.vizHeight = 240  
+        self.canvasBackground = backgroundColor 
+        self.steradians = ["",
+                           "1e-12", "2e-12", "3e-12", "4e-12", "5e-12", "6e-12", "7e-12", "8e-12", "9e-12",
+                           "1e-11", "2e-11", "3e-11", "4e-11", "5e-11", "6e-11", "7e-11", "8e-11", "9e-11",
+                           "1e-10", "2e-10", "3e-10", "4e-10", "5e-10", "6e-10", "7e-10", "8e-10", "9e-10",
+                           "1e-9", "2e-9", "3e-9", "4e-9", "5e-9", "6e-9", "7e-9", "8e-9", "9e-9",
+                           "1e-8", "2e-8", "3e-8", "4e-8", "5e-8", "6e-8", "7e-8", "8e-8", "9e-8",
+                           "1e-7", "2e-7", "3e-7", "4e-7", "5e-7", "6e-7", "7e-7", "8e-7", "9e-7",
+                           "1e-6", "2e-6", "3e-6", "4e-6", "5e-6", "6e-6", "7e-6", "8e-6", "9e-6",
+                           "1e-5", "2e-5", "3e-5", "4e-5", "5e-5", "6e-5", "7e-5", "8e-5", "9e-5",
+                           "1e-4", "2e-4", "3e-4", "4e-4", "5e-4", "6e-4", "7e-4", "8e-4", "9e-4",
                            "1e-3", "2e-3", "3e-3", "4e-3", "5e-3", "6e-3", "7e-3", "8e-3", "9e-3" ]
         
         # list of output formats
@@ -119,23 +115,6 @@ class model:
             self.__logger.error("Exception\r\n" + traceback.format_exc(None))
 
         return found
-        
-         
-    def setup(self): 
-        """Get the vector layers from QGIS and perform other startup actions"""
-        # Reset
-        del self.vectors[:]
-        
-        layers = iface.legendInterface().layers()
-        found = False
-        for layer in layers:
-            if layer.type() == QgsMapLayer.VectorLayer and layer.rendererV2() is not None:
-                found = True
-                self.vectors.append(vector(self.iface, layer))
-                
-        # At __init__ the first in the list will be the main vector layer
-        if found == True:
-            self.vectors[0].main = True
        
     def setSelectedPopupField(self, name, state):
         """Set the selected field state"""
@@ -250,14 +229,197 @@ class model:
         for p in self.projections:
             if p.selected == True:
                 found = p
-        return found    
+        return found  
+    
+
+class process:
+    """Class to perform the conversion of the shapefiles to selected format and 
+       create the output files"""
+    def __init__(self, iface, layer):
+        """Initialise the layer"""
+        self.__logger = log(self.__class__.__name__)
+        self.__qgis = qgisWrapper()  
+        self.model = None
+           
+    def export(self, progress, model, webServerUrl):
+        """Main export function. Do the stuff.
+        
+        :param progress: Progress bar widget.
+        :type progress: QProgressBar
+        
+        :param model: The UI model for all entered data.
+        :type model: d3MapRenderer.logic.model
+        
+        :param webServerUrl: Url for displaying the resulting output to d3 in the web browser.
+        :type webServerUrl: String
+        """
+        tick = 0
+        progress.setValue(tick)
+        self.model = None
+        self.model = model
+        
+        main = self.model.getMainLayer()
+        
+        if main is not None:        
+            self.__logger.info("EXPORT start ==================================================")
+            self.logExportParams(main)
+            
+            # Create a class to help in replacing all the JavaScript in the index.html file
+            outVars = outputVars(main.layer, self.model.title, self.model.width, self.model.height, self.model.showHeader, self.model.idField,
+                                 (self.model.selectedPopupPosition == 1),
+                                 self.model.legend, self.panZoom, self.model.selectedLegendPosition,
+                                 self.model.selectedVizChart, self.model.__ranges, self.model.vizLabels,
+                                 self.model.vizHeight, self.model.vizWidth, self.model.showLabels) 
+            # Initialise bounding box for projection with full 
+            bbox = bound()
+
+            # Create the directory structure
+            self.__logger.info("EXPORT copying folders and files")
+            uid = self.getUniqueFolderName()
+            self.createFolders(uid)
+        
+            tick += 1
+            progress.setValue(tick)
+            
+            # Get QgsVectorLayers in correct order
+            layers = self.getLayersForOutput()
+            
+            # List for all QgsVectorLayers symbology
+            symbols = []
+            
+            # List for all QgsVectorLayers label styles
+            labels = [] 
+
+            for i, vect in enumerate(layers):     
+                self.__logger.info("EXPORT " + vect.name)   
+                vect.filePath = self.getDestShpFile(uid, vect)
+                
+                renderer = vect.layer.rendererV2()
+                
+                # TODO: Remove vect.layer property completely in order to do an end to end test
+                # Open a shapefile from path and then save as below in openShape
+                # Just need filePath of original layer
+                self.__qgis.saveShape(vect.layer, vect.filePath)
+
+                tick += 1
+                progress.setValue(tick)
+                
+                # Re-open saved shape file now its available for editing 
+                destLayer = self.__qgis.openShape(vect.filePath, vect.name)                              
+            
+                # Read the extent of the layer now its in the correct crs
+                if vect.main == True:
+                    extent = destLayer.extent()
+                    bbox.setLeft(extent.xMinimum())
+                    bbox.setBottom(extent.yMinimum())
+                    bbox.setRight(extent.xMaximum())
+                    bbox.setTop(extent.yMaximum())
+            
+                # Add a color column
+                self.addColumns(destLayer)
+                tick += 1
+                progress.setValue(tick)
+                
+                # Read colors from the QgsVectorLayer
+                syms = self.getSymbology(renderer, destLayer, vect.transparency, i)
+                tick += 1
+                progress.setValue(tick)
+            
+                # Write color column to the QgsVectorLayer
+                self.writeSymbology(destLayer, syms)
+                tick += 1
+                progress.setValue(tick)
+                
+                # Close the shapefile
+                del destLayer
+                
+                # Determine the attributes to preserve from the shapefile
+                # Limited to color, id and label fields
+                # Popup attributes are preserved in a CSV file                
+                preserveAttributes = [self.model.__colorField, self.model.__sizeField]
+                
+                # Get any labels for the QgsVectorLayer
+                label = labeling(vect.layer, i)
+                if self.model.showLabels == True and label.hasLabels() == True:
+                    labels.append(label)
+                    preserveAttributes.append(label.fieldName)
+                
+                tick += 1
+                progress.setValue(tick)                          
+            
+                # Only output the id field for the main layer
+                idAttribute = ""
+                if vect.main == True:
+                    idAttribute = self.idField        
+        
+                # Create the output json file
+                path = self.getDestJsonFolder(uid)         
+                name = self.getSafeString(vect.name)  
+                objName = self.getLayerObjectName(i) 
+                
+                # And then store the details in order to write the index file
+                destPath = self.getUniqueFilePath(os.path.join(path, name + self.model.selectedFormat.extension))
+                objName, name = self.model.selectedFormat.convertShapeFile(path, destPath, vect.filePath, objName, self.model.simplification, idAttribute, preserveAttributes)
+                
+                hasTip = vect.main and self.popup  
+                hasViz = vect.main and self.hasViz
+                outlineWidth = syms.getAvergageOutlineWidth()     
+                
+                # Store the QgsVectorLayer symbols in a single list now that the the average outline width has been calculated
+                symbols.extend(syms)
+                
+                tick += 1
+                progress.setValue(tick)         
+                
+                outVars.outputLayers.append(outputLayer(objName, name, outlineWidth, vect.main, hasTip, hasViz, syms))
+                
+                if self.legend and vect.main:
+                    # Create the legend for the main layer
+                    self.writeLegendFile(uid, syms)  
+                    
+                tick += 1
+                progress.setValue(tick)              
+                  
+            # Write symbol styles
+            self.writeCss(uid, symbols, labels)  
+            
+            # Copy any external SVG files
+            self.copyImgFiles(uid, symbols)
+            
+            # Alter the index file
+            n = self.getDestIndexFile(uid)
+            
+            self.selectedFormat.writeIndexFile(n, outVars, bbox, self.model.selectedProjection, self.model.__selectedFields, labels)
+            tick += 1
+            progress.setValue(tick)
+            
+            ''''Order of things is important
+            writeDataFile() appends an ID field if not already in the popup
+            Would result in the popup template potentially having an unexpected ID field'''
+            if self.popup == True or self.hasViz == True:
+                self.__logger.info("EXPORT popup data")
+                # Create the data files
+                self.writeDataFile(uid) 
+            
+            # Now zip up the shapefiles
+            self.zipShpFiles(uid)
+            
+            self.__logger.info("EXPORT complete =========================================================")
+            
+            tick += 1
+            progress.setValue(tick)
+                
+            # start browser
+            webbrowser.open_new_tab("{0}{1}/index.html".format(webServerUrl, uid))
+       
+          
     
     def getLayersForOutput(self):
         """Get all the layers selected for output in the order defined in the QGIS legend"""
         found = []
-        # Get all vecotr layers, extras as well as the main layer
-        for v in self.vectors:
-            if (self.extraVectors == True and v.extra == True) or v.main == True:
+        # Get all vector layers, extras as well as the main layer
+        for v in self.model.vectors:
+            if (self.model.extraVectors == True and v.extra == True) or v.main == True:
                 found.append(v)
         # Reverse the order for processing the output, 
         # this will also form the order the SVG groups are created
@@ -365,12 +527,6 @@ class model:
 
             # Commit the transaction
             layer.commitChanges()
-
-            
-    def getCanvasStyle(self):
-        """Get the canvas background color"""
-        style = "#mapSvg{{background-color: {0};}}\n"
-        return style.format(self.iface.mapCanvas().canvasColor().name())
         
     def writeCss(self, uid, symbols, labels):
         """Create/append CSS file for symbology"""
@@ -398,6 +554,11 @@ class model:
         finally:
             f.close()
             
+    def getCanvasStyle(self):
+        """Get the canvas background color"""
+        style = "#mapSvg{{background-color: {0};}}\n"
+        return style.format(self.model.canvasBackground)
+            
     def writeDataFile(self, uid):
         """Write the main info file which will be used in the popup"""
         main = self.getMainLayer()
@@ -411,20 +572,20 @@ class model:
                 for range in self.__ranges:
                     fields = range.getFields()
                     for field in fields:
-                        if field not in self.__selectedFields:
-                            self.__selectedFields.append(field)
+                        if field not in self.model.__selectedFields:
+                            self.model.__selectedFields.append(field)
             
             # Add the csv header
-            if self.idField not in self.__selectedFields:
-                self.__selectedFields.append(self.idField)
+            if self.idField not in self.model.__selectedFields:
+                self.model.__selectedFields.append(self.idField)
             
-            f.write(u",".join(self.__selectedFields))
+            f.write(u",".join(self.model.__selectedFields))
             f.write("\n")  
               
             # Loop though each feature and read the values
             for feature in features:
                 line = u""
-                for field in self.__selectedFields:
+                for field in self.model.__selectedFields:
                     idField = (field == self.idField)
                     line += self.safeCsvString(feature[field], idField) + ","
                 f.write(unicode(line[:-1]))
@@ -444,7 +605,7 @@ class model:
         if syms is not None and len(syms) > 0 and type(syms[0]) != singleSymbol :
             n = self.getDestLegendFile(uid)
             f = codecs.open(n, "a", "utf-8")
-            #for  now a fixed width and height for the legend
+            # for  now a fixed width and height for the legend
             template = u"{w},{h},{c},{t}\n"
             try:
                 
@@ -455,10 +616,10 @@ class model:
                         uText = self.safeCsvUnicode(sym.label, False)
                         
                         f.write(template.format(
-                                                w = sym.symbol.legendWidth,
-                                                h = sym.symbol.legendHeight,
-                                                c = uCss, 
-                                                t = uText));
+                                                w=sym.symbol.legendWidth,
+                                                h=sym.symbol.legendHeight,
+                                                c=uCss,
+                                                t=uText));
                         
             except Exception as e:
                 # don't leave open files 
@@ -478,9 +639,9 @@ class model:
         if idField == True:
             # d3 strips empty floating points from its id property returning whole numbers
             if val.endswith(".0"):
-                val = val[:len(val)-2]        
+                val = val[:len(val) - 2]        
             
-        return val.replace(",","")
+        return val.replace(",", "")
         
     def safeCsvUnicode(self, obj, idField):
         """Make a string safe for use in a CSV file
@@ -537,6 +698,7 @@ class model:
             
     def isWindows(self):
         """Windows OS?"""
+        # TODO: Move to this class, and change reference is UI class
         return self.osHelp.isWindows        
             
     def getSourceFolder(self):
@@ -545,9 +707,9 @@ class model:
     
     def getDestFolder(self, uid):
         """Get the destination folder with the unique id appended"""
-        safeFolder = self.outputFolder
+        safeFolder = self.model.outputFolder
         if self.isWindows() == True:
-            safeFolder = self.outputFolder.encode('ascii', 'ignore')
+            safeFolder = self.model.outputFolder.encode('ascii', 'ignore')
 
         return os.path.join(safeFolder, uid)
        
@@ -570,6 +732,7 @@ class model:
         """Get the destination path to the shapefile"""
         dest = self.getDestShpFolder(uid)
         
+        # TODO: vect or layer ? be consistent
         fullPath = self.getUniqueFilePath(os.path.join(dest, layer.name + ".shp"))
         
         return fullPath
@@ -628,10 +791,10 @@ class model:
     
     def addColumns(self, layer):
         """Add a new column to hold the color and size used in symbology"""
-        if self.__qgis.hasField(layer, self.__colorField) == False:
-            self.__qgis.addField(layer, self.__colorField) 
-        if self.__qgis.hasField(layer, self.__sizeField) == False:
-            self.__qgis.addField(layer, self.__sizeField)  
+        if self.__qgis.hasField(layer, self.model.__colorField) == False:
+            self.__qgis.addField(layer, self.model.__colorField) 
+        if self.__qgis.hasField(layer, self.model.__sizeField) == False:
+            self.__qgis.addField(layer, self.model.__sizeField)  
                                                         
     def getSafeString(self, val):
         """Return a string condsidered safe for use in file names"""
@@ -655,6 +818,7 @@ class model:
         
         layers = self.getLayersForOutput()
         for vect in layers:    
+            # TODO: Move these into separate attributes
             if vect.layer.isEditable() == True and vect.layer.isModified() == True:
                 isEdit = True
                 break
@@ -664,6 +828,8 @@ class model:
     def logExportParams(self, main):
         """Log the parameters to the log messages panel"""
         template = u"       {0} = [{1}]"
+        
+        # TODO: Refactor into a model.logAllProperties() method and remove this method
         
         self.__logger.info(template.format("Title", self.title))
         self.__logger.info(template.format("Header", str(self.showHeader)))
@@ -695,217 +861,6 @@ class model:
         self.__logger.info(template.format("VizWidth", str(self.vizWidth)))
         self.__logger.info(template.format("DataRanges", self.getDataRangePreview()))  
         self.__logger.info(template.format("Labels", ", ".join(self.vizLabels)))       
-
-        
-    def export(self, progress, webServerUrl):
-        """Main export function. Do the stuff.
-        
-        :param progress: Progress bar widget.
-        :type progress: QProgressBar
-        """
-        tick = 0
-        progress.setValue(tick)
-        
-        main = self.getMainLayer()
-        
-        if main is not None:        
-            self.__logger.info("EXPORT start ==================================================")
-            self.logExportParams(main)
-            
-            # Create a class to help in replacing all the JavaScript in the index.html file
-            outVars = outputVars(main.layer, self.title, self.width, self.height, self.showHeader, self.idField, 
-                                 (self.selectedPopupPosition == 1), 
-                                 self.legend, self.panZoom, self.selectedLegendPosition,
-                                 self.selectedVizChart, self.__ranges, self.vizLabels,
-                                 self.vizHeight, self.vizWidth, self.showLabels) 
-            # Initialise bounding box for projection with full 
-            bbox = bound()
-
-            # Create the directory structure
-            self.__logger.info("EXPORT copying folders and files")
-            uid = self.getUniqueFolderName()
-            self.createFolders(uid)
-        
-            tick+=1
-            progress.setValue(tick)
-            
-            # Get QgsVectorLayers in correct order
-            layers = self.getLayersForOutput()
-            
-            # List for all QgsVectorLayers symbology
-            symbols = []
-            
-            # List for all QgsVectorLayers label styles
-            labels = [] 
-
-            for i, vect in enumerate(layers):     
-                self.__logger.info("EXPORT " + vect.name)   
-                vect.filePath = self.getDestShpFile(uid, vect)
-                
-                renderer = vect.layer.rendererV2()
-                
-                self.__qgis.saveShape(vect.layer, vect.filePath)
-
-                tick+=1
-                progress.setValue(tick)
-                
-                # Re-open saved shape file now its available for editing 
-                destLayer = self.__qgis.openShape(vect.filePath, vect.name)                              
-            
-                # Read the extent of the layer now its in the correct crs
-                if vect.main == True:
-                    extent = destLayer.extent()
-                    bbox.setLeft(extent.xMinimum())
-                    bbox.setBottom(extent.yMinimum())
-                    bbox.setRight(extent.xMaximum())
-                    bbox.setTop(extent.yMaximum())
-            
-                # Add a color column
-                self.addColumns(destLayer)
-                tick+=1
-                progress.setValue(tick)
-                
-                # Read colors from the QgsVectorLayer
-                syms = self.getSymbology(renderer, destLayer, vect.transparency, i)
-                tick+=1
-                progress.setValue(tick)
-            
-                # Write color column to the QgsVectorLayer
-                self.writeSymbology(destLayer, syms)
-                tick+=1
-                progress.setValue(tick)
-                
-                # Close the shapefile
-                del destLayer
-                
-                # Determine the attributes to preserve from the shapefile
-                # Limited to color, id and label fields
-                # Popup attributes are preserved in a CSV file                
-                preserveAttributes = [self.__colorField, self.__sizeField]
-                
-                # Get any labels for the QgsVectorLayer
-                label = labeling(vect.layer, i)
-                if self.showLabels == True and label.hasLabels() == True:
-                    labels.append(label)
-                    preserveAttributes.append(label.fieldName)
-                
-                tick+=1
-                progress.setValue(tick)                          
-            
-                # Only output the id field for the main layer
-                idAttribute = ""
-                if vect.main == True:
-                    idAttribute = self.idField        
-        
-                # Create the output json file
-                path = self.getDestJsonFolder(uid)         
-                name = self.getSafeString(vect.name)  
-                objName = self.getLayerObjectName(i) 
-                
-                # And then store the details in order to write the index file
-                destPath = self.getUniqueFilePath(os.path.join(path, name + self.selectedFormat.extension))
-                objName, name = self.selectedFormat.convertShapeFile(path, destPath, vect.filePath, objName, self.simplification, idAttribute, preserveAttributes)
-                
-                hasTip = vect.main and self.popup  
-                hasViz = vect.main and self.hasViz
-                outlineWidth = syms.getAvergageOutlineWidth()     
-                
-                # Store the QgsVectorLayer symbols in a single list now that the the average outline width has been calculated
-                symbols.extend(syms)
-                
-                tick+=1
-                progress.setValue(tick)         
-                
-                outVars.outputLayers.append(outputLayer(objName, name, outlineWidth, vect.main, hasTip, hasViz, syms))
-                
-                if self.legend and vect.main:
-                    # Create the legend for the main layer
-                    self.writeLegendFile(uid, syms)  
-                    
-                tick+=1
-                progress.setValue(tick)              
-                  
-            # Write symbol styles
-            self.writeCss(uid, symbols, labels)  
-            
-            # Copy any external SVG files
-            self.copyImgFiles(uid, symbols)
-            
-            # Alter the index file
-            n = self.getDestIndexFile(uid)
-            
-            self.selectedFormat.writeIndexFile(n, outVars, bbox, self.selectedProjection, self.__selectedFields, labels)
-            tick+=1
-            progress.setValue(tick)
-            
-            ''''Order of things is important
-            writeDataFile() appends an ID field if not already in the popup
-            Would result in the popup template potentially having an unexpected ID field'''
-            if self.popup == True or self.hasViz == True:
-                self.__logger.info("EXPORT popup data")
-                # Create the data files
-                self.writeDataFile(uid) 
-            
-            # Now zip up the shapefiles
-            self.zipShpFiles(uid)
-            
-            self.__logger.info("EXPORT complete =========================================================")
-            
-            tick+=1
-            progress.setValue(tick)
-                
-            # start browser
-            webbrowser.open_new_tab("{0}{1}/index.html".format(webServerUrl, uid))
      
-    
-class vector:
-    """Base class for the layer abstracting away the QGIS details"""
-    
-    def __init__(self, iface, layer):
-        """Initialise the layer"""
-        
-        self.rendererType = 0
-        self.id = layer.id()
-        self.name = layer.name()
-        self.layer = layer
-        self.filePath = ""
-        self.main = False
-        self.extra = iface.legendInterface().isLayerVisible(layer)
-        self.type = layer.type()
-        self.fields = []
-        self.vizFields = []
-        self.defaultId = ""        
-
-        
-        self.isVisible = iface.legendInterface().isLayerVisible(layer) 
-        self.transparency = 1 - (float(layer.layerTransparency()) / 100)
-        for f in layer.pendingFields():
-            # Add to the list of fields
-            self.fields.append(f.name()) 
-            
-            # Add numeric fields to the list for visualization
-            if f.typeName().lower() == "integer" or f.typeName().lower() == "real" or f.typeName().lower() == "integer64":
-                self.vizFields.append(f.name())
-            
-            # An ID field? Set the default for the ID field option    
-            upper = f.name().upper() 
-            if upper == "ID" or upper == "OBJECT_ID" or upper == "OBJECTID":
-                self.defaultId = f.name()
-                
-                
-        renderer = layer.rendererV2()
-        dump = renderer.dump()
-        
-        
-        if dump[0:6] == "SINGLE":
-            self.rendererType = 0            
-        elif dump[0:11] == "CATEGORIZED":
-            self.rendererType = 1        
-        elif dump[0:9] == "GRADUATED":
-            self.redererType = 2
-            
-    def isSingleRenderer(self):
-        """Is this a single renderer type?"""
-        return self.rendererType == 0
     
         
