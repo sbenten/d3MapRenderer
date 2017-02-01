@@ -260,24 +260,24 @@ class model:
         """Get a unique folder name"""
         return time.strftime("%Y%m%d%H%M%S")          
     
-    def setSymbology(self, renderer, layer, transparency, index):
+    def setSymbology(self, isMain, renderer, layer, transparency, index):
         """Read the symbology, generate a CSS style and set against each row in the layers attribute table"""
         
         dump = renderer.dump()        
         self.__logger.info(dump)
         
         if dump[0:6] == "SINGLE":
-            return self.setSingleSymbol(layer, renderer, transparency, index)            
+            return self.setSingleSymbol(isMain, layer, renderer, transparency, index)            
         elif dump[0:11] == "CATEGORIZED":
-            return self.setCategorizedSymbol(layer, renderer, transparency, index)        
+            return self.setCategorizedSymbol(isMain, layer, renderer, transparency, index)        
         elif dump[0:9] == "GRADUATED":       
-            return self.setGraduatedSymbol(layer, renderer, transparency, index)
+            return self.setGraduatedSymbol(isMain, layer, renderer, transparency, index)
         else:
             words = dump.split(" ")
             e = ValueError("{0} renderer in {1} not supported".format(words[0], layer.name))
             raise e 
     
-    def setSingleSymbol(self, layer, renderer, transparency, index):
+    def setSingleSymbol(self, isMain, layer, renderer, transparency, index):
         """Read the symbology for single symbol layers"""      
 
         self.__logger.info("setSingleSymbol")
@@ -286,12 +286,12 @@ class model:
         cssstub = self.getLayerObjectName(index)
         
         css = u"{0}r0".format(cssstub)
-        s = singleSymbol(geoType, renderer.symbol(), css, transparency)     
+        s = singleSymbol(isMain, geoType, renderer.symbol(), css, transparency)     
         syms.append(s)       
 
         return syms
             
-    def setCategorizedSymbol(self, layer, renderer, transparency, index):
+    def setCategorizedSymbol(self, isMain, layer, renderer, transparency, index):
         """Read the symbology for categorized symbol layers"""
         
         self.__logger.info("setCategorizedSymbol")
@@ -309,12 +309,12 @@ class model:
             
         for i, c in enumerate(renderer.categories()):
             css = u"{0}c{1}".format(cssstub, str(i))
-            s = categorizedSymbol(geoType, field, fieldType, c, css, transparency)     
+            s = categorizedSymbol(isMain, geoType, field, fieldType, c, css, transparency)     
             syms.append(s)       
         
         return syms
                             
-    def setGraduatedSymbol(self, layer, renderer, transparency, index):
+    def setGraduatedSymbol(self, isMain, layer, renderer, transparency, index):
         """Read the symbology for graduated symbol layers"""
         
         self.__logger.info("setGraduatedSymbol")
@@ -325,7 +325,7 @@ class model:
         
         for i, r in enumerate(renderer.ranges()):
             css = u"{0}r{1}".format(cssstub, str(i))
-            s = graduatedSymbol(geoType, field, r, css, transparency)     
+            s = graduatedSymbol(isMain, geoType, field, r, css, transparency)     
             syms.append(s)       
             
         return syms
@@ -703,7 +703,7 @@ class model:
                 progress.setValue(tick)
                 
                 # Read colors
-                syms = self.setSymbology(renderer, destLayer, vect.transparency, i)
+                syms = self.setSymbology(vect.main, renderer, destLayer, vect.transparency, i)
                 tick+=1
                 progress.setValue(tick)
             

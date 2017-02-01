@@ -27,9 +27,12 @@ class symbols(list):
 class singleSymbol:
     """Single symbol.Base class for tracking symbology within a layer"""
     
-    def __init__(self, geoType, sym, css, trans):
+    def __init__(self, isMain, geoType, sym, css, trans):
         """Initialise the symbol range
-        
+  
+        :param isMain: The main layer for the map
+        :type isMain: boolean      
+                
         :param geoType: Layer.geometryType() GeometryType of the layer.
         :type geoType: GeometryType  e.g. QGis.WKBPolygon
         
@@ -44,6 +47,7 @@ class singleSymbol:
         
         """
         self.__logger = log(self.__class__.__name__) 
+        self.isMain = isMain
         self.geometryType = geoType
         self.label = ""
         self.css = css
@@ -179,9 +183,10 @@ Qt::TexturePattern    24    Custom pattern (see QBrush::setTexture())
         # Also sized circles will require some extra attribute setting 
         # as SVG circle radius is cannot be set by CSS. 
         # In D3 this needs setting "path.pointRadius(0.1);"
-        val = ".{c} {b} stroke: {s}; stroke-width: {w}; stroke-opacity: {so}; stroke-dasharray: {d}; fill: {f}; fill-opacity: {fo}; {e}"
+        val = ".{c} {b} {m}stroke: {s}; stroke-width: {w}; stroke-opacity: {so}; stroke-dasharray: {d}; fill: {f}; fill-opacity: {fo}; {e}"
         
         output = val.format(
+            m = "pointer-events: none; " if self.isMain == False else "",
             c = self.css,
             b = "{",
             e = "}",
@@ -196,8 +201,9 @@ Qt::TexturePattern    24    Custom pattern (see QBrush::setTexture())
     
     def getLineStyle(self):
         """Get the style for graduated polygons"""
-        val = ".{c} {b} stroke: {s}; stroke-width: {w}; stroke-opacity: {o}; stroke-dasharray: {d}; fill-opacity: 0.0; {e}"
+        val = ".{c} {b} {m}stroke: {s}; stroke-width: {w}; stroke-opacity: {o}; stroke-dasharray: {d}; fill-opacity: 0.0; {e}"
         output = val.format(
+            m = "pointer-events: none; " if self.isMain == False else "",
             c = self.css,
             b = "{",
             e = "}",
@@ -211,8 +217,9 @@ Qt::TexturePattern    24    Custom pattern (see QBrush::setTexture())
     
     def getPolygonStyle(self):
         """Get the style for graduated polygons"""
-        val = ".{c} {b} stroke: {s}; stroke-width: {w}; stroke-opacity: {so}; stroke-dasharray: {d}; fill: {f}; fill-opacity: {fo}; {e}"
+        val = ".{c} {b} {m}stroke: {s}; stroke-width: {w}; stroke-opacity: {so}; stroke-dasharray: {d}; fill: {f}; fill-opacity: {fo}; {e}"
         output = val.format(
+            m = "pointer-events: none; " if self.isMain == False else "",
             c = self.css,
             b = "{",
             e = "}",
@@ -254,9 +261,12 @@ Qt::CustomDashLine    6    A custom pattern defined using QPainterPathStroker::s
 class categorizedSymbol(singleSymbol):
     """Categorized sysmbol class"""
     
-    def __init__(self, geoType, field, fieldType, range, css, trans):
+    def __init__(self, isMain, geoType, field, fieldType, range, css, trans):
         """Initialise the symbol range
-        
+  
+        :param isMain: The main layer for the map
+        :type isMain: boolean      
+               
         :param geoType: Layer.geometryType() GeometryType of the layer.
         :type geoType: GeometryType  e.g. QGis.WKBPolygon
         
@@ -278,6 +288,7 @@ class categorizedSymbol(singleSymbol):
         """
         self.__logger = log(self.__class__.__name__) 
         self.geometryType = geoType
+        self.isMain = isMain
         self.field = field
         self.fieldType = fieldType
         self.label = range.label()
@@ -318,8 +329,11 @@ class categorizedSymbol(singleSymbol):
 class graduatedSymbol(singleSymbol):
     """Graduated symbol class"""
     
-    def __init__(self, geoType, field, range, css, trans):
+    def __init__(self, isMain, geoType, field, range, css, trans):
         """Initialise the symbol range
+  
+        :param isMain: The main layer for the map
+        :type isMain: boolean      
         
         :param geoType: Layer.geometryType() GeometryType of the layer.
         :type geoType: GeometryType  e.g. QGis.WKBPolygon
@@ -338,6 +352,7 @@ class graduatedSymbol(singleSymbol):
         
         """
         self.__logger = log(self.__class__.__name__) 
+        self.isMain = isMain
         self.geometryType = geoType
         self.field = field
         self.label = str(range.label())
