@@ -1,6 +1,6 @@
 # coding=utf-8
 
-from PyQt4.QtCore import QSettings
+from qgis.PyQt.QtCore import QSettings
 from qgis.core import *
 
 class globalSettings(object):

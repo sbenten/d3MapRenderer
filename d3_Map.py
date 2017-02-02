@@ -28,8 +28,8 @@ import tempfile
 import resources_rc
 import traceback
 
-from PyQt4.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, Qt
-from PyQt4.QtGui import *
+from qgis.PyQt.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, Qt
+from qgis.PyQt.QtGui import *
 from qgis.core import *
 from qgis.gui import *
 
@@ -38,12 +38,13 @@ from d3_Map_dialog import d3MapRendererDialog
 from d3MapSettings import d3MapSettings
 from settings import globalSettings
 
-from logic import model
+from models import model
+from logic import process
 from logger import log
 from layer import vector
 from tree import vectorItem, fieldItem
 from d3MapRenderer import settings
-from d3MapRenderer.outputHelp import topoJson, geoJson
+from d3MapRenderer.output import topoJson, geoJson
 
 
 class d3MapRenderer:
@@ -85,7 +86,9 @@ class d3MapRenderer:
         self.__logger = log(self.__class__.__name__)
         self.model = None
         self.settings = None
+        self.process = None
         self.webServerUrl = ""
+
 
         # Declare instance attributes
         self.actions = []
@@ -278,7 +281,7 @@ class d3MapRenderer:
         for f in self.model.formats:
             self.dlg.formatComboBox.addItem(f.name, f)
                 
-        if self.model.hasTopoJson() == False:
+        if self.process.hasTopoJson() == False:
             t = topoJson()
             self.dlg.formatComboBox.removeItem(self.dlg.formatComboBox.findText(t.name))
           
@@ -401,7 +404,7 @@ class d3MapRenderer:
         lastFormat = self.settings.outputFormat()
         if lastFormat != "":
             t = topoJson()
-            if lastFormat != t.name or self.model.hasTopoJson() == True:
+            if lastFormat != t.name or self.process.hasTopoJson() == True:
                 formatIndex = self.dlg.formatComboBox.findText(lastFormat)
                 if formatIndex > -1:
                     self.dlg.formatComboBox.setCurrentIndex(formatIndex)
@@ -440,7 +443,7 @@ class d3MapRenderer:
             
     def checkModified(self):
         """Check if the layers have been modified"""
-        modified = self.model.areLayersModified()
+        modified = self.process.areLayersModified()
         
         if modified == True:
             response = QMessageBox.warning(self.iface.mainWindow(), 
@@ -491,7 +494,7 @@ class d3MapRenderer:
             if os.path.exists(self.dlg.outputEdit.text()) == False:
                 result = False
                 
-        if self.model.isWindows() == True:
+        if self.process.isWindows() == True:
             # Restriction on windows command call to ASCII only characters
             # Prevent input of Unicode characters here
             try:
@@ -679,11 +682,6 @@ class d3MapRenderer:
         folder = QFileDialog.getExistingDirectory(self.dlg, "Select Output Directory", folder, QFileDialog.ShowDirsOnly)
         if len(folder) > 0:
             self.dlg.outputEdit.setText(folder)
-            
-    def getCanvasBackground(self):
-        """Get the canvas background color"""
-        style = "#mapSvg{{background-color: {0};}}\n"
-        return style.format(self.iface.mapCanvas().canvasColor().name())
     
     def closeDialog(self):
         """Cancel clicked closed the dialog"""
@@ -695,7 +693,7 @@ class d3MapRenderer:
         if self.validate() == True and self.checkModified() == False:
             progressMessageBar = self.iface.messageBar().createMessage("Exporting...")
             progress = QProgressBar()   
-            progress.setMaximum(self.model.getProgressTicks())
+            progress.setMaximum(self.process.getProgressTicks())
             progress.setAlignment(Qt.AlignLeft|Qt.AlignVCenter)
             progressMessageBar.layout().addWidget(progress)
             self.iface.messageBar().pushWidget(progressMessageBar, self.iface.messageBar().INFO)
@@ -707,7 +705,7 @@ class d3MapRenderer:
                 self.settings.setProjOutputPath(self.model.outputFolder)
                 
                 self.dlg.hide()
-                self.model.export(progress, self.settings.webServerUrl())   
+                self.process.export(progress, self.settings.webServerUrl())   
                
             except Exception as e:
                 # What? log and then re-throw
@@ -726,7 +724,7 @@ class d3MapRenderer:
             # Remove running instance. Only one at a time please
             self.closeDialog()
             
-        self.model = model(self.iface, self.getCanvasBackground())
+        self.model = model( self.iface.mapCanvas().canvasColor().name() )
         self.settings = globalSettings()
         self.setupUI()        
           
@@ -734,6 +732,9 @@ class d3MapRenderer:
     def setupUI(self):
         """Show the dialog and bind events"""
         self.dlg.show()
+        
+        # Create the process object to handle output and OS checks
+        self.process = process(self.model)
         
         # Set UI state to match the model
         self.resetFields()
@@ -749,6 +750,7 @@ class d3MapRenderer:
         
         layers = self.iface.legendInterface().layers()
         found = False
+        i = 0
         for layer in layers:
             if layer.type() == QgsMapLayer.VectorLayer and layer.rendererV2() is not None:
                 found = True
@@ -756,7 +758,7 @@ class d3MapRenderer:
                 
         # At __init__ the first in the list will be the main vector layer
         if found == True:
-            self.model.vectors[0].main = True
+            self.model.vectors[0].setMain(True)
         
         # attach events
         # logic tab

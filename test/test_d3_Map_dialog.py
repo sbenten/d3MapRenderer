@@ -14,7 +14,7 @@ __copyright__ = 'Copyright 2015, Simon Benten'
 
 import unittest
 
-from PyQt4.QtGui import QDialogButtonBox, QDialog
+from qgis.PyQt.QtGui import QDialogButtonBox, QDialog
 
 import imp
 d = imp.load_source('d3MapRendererDialog', '../d3_Map_dialog.py')

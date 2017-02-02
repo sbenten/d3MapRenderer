@@ -20,8 +20,8 @@
  *                                                                         *
  ***************************************************************************/
 """
-from PyQt4.QtCore import QSettings, QTranslator, qVersion, QCoreApplication
-from PyQt4.QtGui import QAction, QIcon
+from qgis.PyQt.QtCore import QSettings, QTranslator, qVersion, QCoreApplication
+from qgis.PyQt.QtGui import QAction, QIcon
 # Initialize Qt resources from file resources.py
 import resources_rc
 # Import the code for the dialog
@@ -29,7 +29,7 @@ from d3MapSettings_dialog import d3MapSettingsDialog
 import os.path
 
 from settings import globalSettings
-from PyQt4.QtGui import *
+from qgis.PyQt.QtGui import *
 import tempfile
 from osHelp import osHelper
 

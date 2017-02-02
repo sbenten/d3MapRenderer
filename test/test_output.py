@@ -1,5 +1,5 @@
 # coding=utf-8
-"""Resources test.
+"""Output test.
 
 .. note:: This program is free software; you can redistribute it and/or modify
      it under the terms of the GNU General Public License as published by
@@ -9,17 +9,24 @@
 """
 
 __author__ = 'swbenten@gmail.com'
-__date__ = '2015-06-17'
+__date__ = '2015-10-09'
 __copyright__ = 'Copyright 2015, Simon Benten'
 
+import imp
 import unittest
+import os
 
-from qgis.PyQt.QtGui import QIcon
+from qgis.core import *
+from qgis.gui import *
 
+gisWrapper = imp.load_source('*', '../gisWrapper.py')
+models = imp.load_source('*', '../models.py')
+bbox = imp.load_source('*', '../bbox.py')
+projections = imp.load_source('*', '../projections.py')
 
-
-class d3MapRendererDialogTest(unittest.TestCase):
-    """Test rerources work."""
+class TestOutput(unittest.TestCase):
+    """Test the output works
+        Note: This doesn't check for pre-requisites"""
 
     def setUp(self):
         """Runs before each test."""
@@ -28,17 +35,8 @@ class d3MapRendererDialogTest(unittest.TestCase):
     def tearDown(self):
         """Runs after each test."""
         pass
-
-    def test_icon_png(self):
-        """Test we can click OK."""
-        path = ':/plugins/d3MapRenderer/icon.png'
-        icon = QIcon(path)
-        self.assertFalse(icon.isNull())
-
-if __name__ == "__main__":
-    suite = unittest.makeSuite(d3MapRendererResourcesTest)
-    runner = unittest.TextTestRunner(verbosity=2)
-    runner.run(suite)
-
-
-
+    
+        
+    
+if __name__ == '__main__':
+    unittest.main()

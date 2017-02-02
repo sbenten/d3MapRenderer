@@ -66,9 +66,9 @@ class chart(object):
         
         for r in ranges:
             for f in r.getFields():
-                index = main.fieldNameIndex(f)
-                lmin.append(main.minimumValue(index))
-                lmax.append(main.maximumValue(index))
+                index = main.layer.fieldNameIndex(f)
+                lmin.append(main.layer.minimumValue(index))
+                lmax.append(main.layer.maximumValue(index))
             
         if len(lmin) > 0:
             min(lmin)   

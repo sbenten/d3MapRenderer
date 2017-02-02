@@ -1,6 +1,6 @@
 from logger import log
 
-class css3:
+class css3(object):
     
     def __init__(self):
         """Constructor"""

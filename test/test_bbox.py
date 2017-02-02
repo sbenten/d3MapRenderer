@@ -19,7 +19,7 @@ b = imp.load_source('*', '../bbox.py')
 
 
 class TestBBox(unittest.TestCase):
-    """Test bouding boxes work."""
+    """Test bounding boxes work."""
     
     def setUp(self):
         """Runs before each test."""

@@ -174,13 +174,19 @@
               if (shape() != "circle")
                 space += padding()
             
-              if (shape() == "line"){
-                createLine(items, max);
-              } else {
-                items.append("path")
-                  .attr("d", d3.svg.symbol().type(shape()).size( function(d) { return d.Width; }  ))
-                  .attr("transform", function (d, i) { return "translate(" + space + "," + max[1] + ")"; })
-                  .attr("class", function (d) { return d.Color; });  
+              switch (shape()){
+                case "line":
+                  createLine(items, max);
+                  break;
+                case "poly":
+                  createRect(items, max);
+                  break;
+                default:
+                  items.append("path")
+                    .attr("d", d3.svg.symbol().type(shape()).size( function(d) { return d.Width; }  ))
+                    .attr("transform", function (d, i) { return "translate(" + space + "," + max[1] + ")"; })
+                    .attr("class", function (d) { return d.Color; });  
+                  break;
               }  
               finish(g, rect, items, max);
             }
@@ -198,6 +204,36 @@
                 .attr("x2", x2)
                 .attr("y2", y)
                 .attr("class", function (d) { return d.Color; });
+        }
+        
+        // Private: Create a set of rectangles
+        function createRect(items, max) {
+            return items.append("rect")
+                .attr("x", function (d) { return getRectX(d.Width, max[0]); })
+                .attr("y", function (d) { return getRectY(d.Height, max[1]); })
+                .attr("width", function (d) { return getRectWidth(d.Width); })
+                .attr("height", function (d) { return getRectHeight(d.Height); })
+                .attr("class", function (d) { return d.Color; });
+        }
+
+        // Private: Get the rectangle X position
+        function getRectX(v, maxW) {
+            return margin() + padding() + ((maxW - +v) / 2);
+        }
+
+        // Private: Get the rectangle Y position
+        function getRectY(v, maxH) {
+            return margin() + padding() + ((maxH - +v) / 2);
+        }
+
+        // Private: Get the rectangle width
+        function getRectWidth(v) {
+            return +v;
+        }
+
+        // Private: Get the rectangle height
+        function getRectHeight(v) {
+            return +v;
         }
 
         

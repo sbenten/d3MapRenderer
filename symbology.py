@@ -1,15 +1,20 @@
 import os
 from qgis.core import *
-from PyQt4.QtCore import QVariant, Qt
 
 from logger import log
 from style import css3
 
-class layerSymbols(list):
-    """List of symbols within a particular layer. Add only items from the symbol class"""
+class renderers(list):
+    """List of data ranges per renderer within a particular layer. 
+      May only contain a single renderer, or multiple graduated or categorized renderers"""
+      
+    """ TODO: At the moment only supports one symbol per renderer data range. However
+          Q supports multiple and nested symbols to provide an overall effect. This will be difficult 
+          to present on the web in a performant way, but leave the code ready to tackle this later"""
     
     def __init__(self):
         """Constructor. Nothing special here"""
+        self.__logger = log(self.__class__.__name__) 
         
     def getAvergageOutlineWidth(self):
         """Retrieve the average outline width
@@ -18,36 +23,56 @@ class layerSymbols(list):
         However, re-scaling on each polygon/line/point is too costly
         Take the average width and do it to the entire group"""
         items = []
-        for s in self:
-            items.append(s.symbol.outlineWidth)
+        for r in self:
+            items.append(r.symbols[0].outlineWidth)
         average = sum(items) / float(len(items)) 
         return round(average, 4)
     
+    def logData(self):
+        """Log the symbols in the list"""
+        
+        template = u"""       {type}
+                  geotype = [{geometryType}],  size =  [{size}],  color = [{color}],  colorTrans = [{colorTrans}]
+                  outlineWidth = [{outlineWidth}],  outlineColor = [{outlineColor}],  outlineStyle = [{outlineStyle}],  outlineTrans = [{outlineTrans}]
+                  brushStyle = [{brushStyle}],  legendWidth = [{legendWidth}],  legendHeight = [{legendHeight}]"""
+        
+        for r in self:
+            self.__logger.info(template.format(
+                type = type(r.symbols[0]),
+                geometryType = r.symbols[0].geometryType,
+                size = r.symbols[0].size,
+                color = r.symbols[0].color,
+                colorTrans = r.symbols[0].colorTrans,
+                outlineWidth = r.symbols[0].outlineWidth,
+                outlineColor = r.symbols[0].outlineColor,
+                outlineStyle = r.symbols[0].outlineStyle,
+                outlineTrans = r.symbols[0].outlineTrans,
+                brushStyle = r.symbols[0].brushStyle,
+                legendWidth = r.symbols[0].legendWidth,
+                legendHeight = r.symbols[0].legendHeight
+            ))
+    
 class symbol(object):
     
-    def __init__(self, geoType, parentSymbol, index, cssClassName, layerTransparency):
+    def __init__(self, geoType, parentSymbol, layerTransparency):
         """
         Abstract base class 
+        
         :param geoType: Layer.geometryType() GeometryType of the layer.
         :type geoType: GeometryType  e.g. QGis.WKBPolygon
         
         :param parentSymbol: The parent symbol to use with this layer.
         :type parentSymbol: QgsSymbolV2
         
-        :param index: Index in the layer output order
-        :type index: int
-                
-        :param cssClassName: Css class name to use.
-        :type cssClassName: str
-        
         :param layerTransparency: Transparency setting for the overall layer.
         :type layerTransparency: float
         """
         self.geometryType = geoType
+        self.isMain = False
         self.transparency = layerTransparency
         self.cssHelper = css3()
-        self.index = index
-        self.css = cssClassName
+        self.index = 0
+        self.css = ""
         self.size = "20"
         self.color = "#000000"
         self.colorTrans = 255
@@ -130,29 +155,25 @@ class symbol(object):
     
 class simpleLineSymbol(symbol):
     
-    def __init__(self, geoType, parentSymbol, index, cssClassName, layerTransparency):
+    def __init__(self, geoType, parentSymbol, layerTransparency):
         """ 
+        
         :param geoType: Layer.geometryType() GeometryType of the layer.
         :type geoType: GeometryType  e.g. QGis.WKBPolygon
         
         :param parentSymbol: The parent symbol to use with this layer.
         :type parentSymbol: QgsLineSymbolV2  
         
-        :param index: Index in the layer output order
-        :type index: int
-                
-        :param cssClassName: Css class name to use.
-        :type cssClassName: str
-        
         :param layerTransparency: Transparency setting for the overall layer.
         :type layerTransparency: float
         """
         self.__logger = log(self.__class__.__name__)
+        self.isMain = False
         self.geometryType = geoType
         self.transparency = layerTransparency
         self.cssHelper = css3()
-        self.index = index
-        self.css = cssClassName 
+        self.index = 0
+        self.css = "" 
         self.size = ""
         self.color = "#000000"
         self.colorTrans = 255
@@ -179,7 +200,7 @@ class simpleLineSymbol(symbol):
             self.color = parentSymbol.color().name()
             self.colorTrans = self.cssHelper.convertColorTransToCssOpacity(parentSymbol.color().alpha())
             self.symbolTrans = parentSymbol.alpha()
-            self.outlineWidth = parentSymbol.symbolLayer(0).width()
+            self.outlineWidth = parentSymbol.symbolLayer(0).width() * 4
             self.outlineColor = parentSymbol.symbolLayer(0).color().name()
             self.outlineTrans = self.cssHelper.convertColorTransToCssOpacity(parentSymbol.symbolLayer(0).color().alpha())
             self.outlineStyle = parentSymbol.symbolLayer(0).penStyle()
@@ -192,8 +213,9 @@ class simpleLineSymbol(symbol):
         
     def toCss(self):
         """Retrieve the Css for line symbols"""
-        val = ".{c} {{ stroke: {s}; stroke-width: {w}; stroke-opacity: {o}; stroke-dasharray: {d}; fill-opacity: 0.0; }}"
+        val = ".{c} {{ {m}stroke: {s}; stroke-width: {w}; stroke-opacity: {o}; stroke-dasharray: {d}; fill-opacity: 0.0; }}"
         output = val.format(
+            m = "" if self.isMain == True else "pointer-events: none; ",
             c = self.css,
             s = unicode(self.outlineColor),
             w = unicode(self.outlineWidth),
@@ -210,29 +232,25 @@ class simpleLineSymbol(symbol):
 
 class simpleMarkerSymbol(symbol):
     
-    def __init__(self, geoType, parentSymbol, index, cssClassName, layerTransparency):
+    def __init__(self, geoType, parentSymbol, layerTransparency):
         """ 
+        
         :param geoType: Layer.geometryType() GeometryType of the layer.
         :type geoType: GeometryType  e.g. QGis.WKBPolygon
         
         :param parentSymbol: The parent symbol to use with this layer.
         :type parentSymbol: QgsMarkerSymbolV2
         
-        :param index: Index in the layer output order
-        :type index: int
-                
-        :param cssClassName: Css class name to use.
-        :type cssClassName: str
-        
         :param layerTransparency: Transparency setting for the overall layer.
         :type layerTransparency: float
         """
         self.__logger = log(self.__class__.__name__)
+        self.isMain = False
         self.geometryType = geoType
         self.transparency = layerTransparency
         self.cssHelper = css3()
-        self.index = index
-        self.css = cssClassName
+        self.index = 0
+        self.css = ""
         self.size = "8"            
         self.name = "circle"
         self.color = "#000000"
@@ -275,9 +293,10 @@ class simpleMarkerSymbol(symbol):
     def toCss(self):
         """Get the style for points"""
         
-        val = ".{c} {{ stroke: {s}; stroke-width: {w}; stroke-opacity: {so}; stroke-dasharray: {d}; fill: {f}; fill-opacity: {fo}; }}"
+        val = ".{c} {{ {m}stroke: {s}; stroke-width: {w}; stroke-opacity: {so}; stroke-dasharray: {d}; fill: {f}; fill-opacity: {fo}; }}"
         
         output = val.format(
+            m = "" if self.isMain == True else "pointer-events: none; ",
             c = self.css,
             s = unicode(self.outlineColor),
             w = unicode(self.outlineWidth),
@@ -372,29 +391,25 @@ class simpleMarkerSymbol(symbol):
        
 class simpleFillSymbol(symbol):
     
-    def __init__(self, geoType, parentSymbol, index, cssClassName, layerTransparency):
+    def __init__(self, geoType, parentSymbol, layerTransparency):
         """ 
+        
         :param geoType: Layer.geometryType() GeometryType of the layer.
         :type geoType: GeometryType  e.g. QGis.WKBPolygon
         
         :param parentSymbol: The parent symbol to use with this layer.
         :type parentSymbol: QgsFillSymbolV2
         
-        :param index: Index in the layer output order
-        :type index: int
-                
-        :param cssClassName: Css class name to use.
-        :type cssClassName: str
-        
         :param layerTransparency: Transparency setting for the overall layer.
         :type layerTransparency: float
         """
         self.__logger = log(self.__class__.__name__)
+        self.isMain = False
         self.geometryType = geoType
         self.transparency = layerTransparency
         self.cssHelper = css3()
-        self.index = index
-        self.css = cssClassName
+        self.index = 0
+        self.css = ""
         self.size = "20"
         self.color = "#000000"
         self.colorTrans = 255
@@ -419,7 +434,7 @@ class simpleFillSymbol(symbol):
             self.color = parentSymbol.color().name()
             self.colorTrans = self.cssHelper.convertColorTransToCssOpacity(parentSymbol.color().alpha())
             self.symbolTrans = parentSymbol.alpha()
-            self.outlineWidth = parentSymbol.symbolLayer(0).borderWidth()
+            self.outlineWidth = parentSymbol.symbolLayer(0).borderWidth() * 4
             self.outlineColor = parentSymbol.symbolLayer(0).borderColor().name()
             self.outlineTrans = self.cssHelper.convertColorTransToCssOpacity(parentSymbol.symbolLayer(0).borderColor().alpha())
             self.outlineStyle = parentSymbol.symbolLayer(0).borderStyle()
@@ -429,9 +444,10 @@ class simpleFillSymbol(symbol):
    
     def toCss(self):
         """Get the style for simple polygons"""
-        val = ".{c} {{ stroke: {s}; stroke-width: {w}; stroke-opacity: {so}; stroke-dasharray: {d}; fill: {f}; fill-opacity: {fo}; }}"
+        val = ".{c} {{ {m}stroke: {s}; stroke-width: {w}; stroke-opacity: {so}; stroke-dasharray: {d}; fill: {f}; fill-opacity: {fo}; }}"
         
         output = val.format(
+            m = "" if self.isMain == True else "pointer-events: none; ",
             c = self.css,
             s = unicode(self.outlineColor),
             w = unicode(self.outlineWidth),
@@ -443,32 +459,33 @@ class simpleFillSymbol(symbol):
         self.__logger.info(output)
         
         return output 
+    
+    def getShape(self):
+        """Retrieve the d3 equivalent shape
+        Just a basic rectangle shape. Needs differentiating from the rect symbol"""        
+        return "poly"
         
 class svgMarkerSymbol(symbol):
     
-    def __init__(self, geoType, parentSymbol, index, cssClassName, layerTransparency):
+    def __init__(self, geoType, parentSymbol, layerTransparency):
         """ 
+        
         :param geoType: Layer.geometryType() GeometryType of the layer.
         :type geoType: GeometryType  e.g. QGis.WKBPolygon
         
         :param parentSymbol: The parent symbol to use with this layer.
         :type parentSymbol: QgsMarkerSymbolV2
         
-        :param index: Index in the layer output order
-        :type index: int
-                
-        :param cssClassName: Css class name to use.
-        :type cssClassName: str
-        
         :param layerTransparency: Transparency setting for the overall layer.
         :type layerTransparency: float
         """
         self.__logger = log(self.__class__.__name__)
+        self.isMain = False
         self.geometryType = geoType
         self.transparency = layerTransparency
         self.cssHelper = css3()
-        self.index = index
-        self.css = cssClassName
+        self.index = 0
+        self.css = ""
         self.size = "8"            
         self.path = u""
         self.color = "#000000"
@@ -496,7 +513,7 @@ class svgMarkerSymbol(symbol):
             self.color = parentSymbol.color().name()
             self.colorTrans = self.cssHelper.convertColorTransToCssOpacity(parentSymbol.color().alpha())
             self.symbolTrans = parentSymbol.alpha()
-            self.outlineWidth = parentSymbol.symbolLayer(0).outlineWidth()
+            self.outlineWidth = parentSymbol.symbolLayer(0).outlineWidth() * 4
             self.size = str(parentSymbol.size())           
             self.outlineColor = parentSymbol.symbolLayer(0).outlineColor().name()
             self.outlineTrans = self.cssHelper.convertColorTransToCssOpacity(parentSymbol.symbolLayer(0).outlineColor().alpha())
@@ -531,9 +548,10 @@ class svgMarkerSymbol(symbol):
         !important used to cram colour choice down the SVG XML child nodes
         Works on most well designed SVGs produced for QGIS, but not SVGs with specific colours within the XML"""
 
-        val = ".{c} {{ stroke: {s} !important; stroke-width: {w} !important; stroke-opacity: {so} !important; stroke-dasharray: {d} !important; fill: {f} !important; fill-opacity: {fo} !important; }}"
+        val = ".{c} {{ {m}stroke: {s} !important; stroke-width: {w} !important; stroke-opacity: {so} !important; stroke-dasharray: {d} !important; fill: {f} !important; fill-opacity: {fo} !important; }}"
         
         output = val.format(
+            m = "" if self.isMain == True else "pointer-events: none; ",
             c = self.css,
             s = unicode(self.outlineColor),
             w = unicode(self.outlineWidth),
@@ -572,7 +590,7 @@ class svgMarkerSymbol(symbol):
         .attr("class", function (d) { return d.properties.d3Css; });
         
         But then, on Orthographic projections, d3 stamps out any d attribute of any path elements within image loaded as an SVG...
-        TODO: WTF? reload the image, or try and prevent d3's natural workings 
+        WTF? reload the image, or try and prevent d3's natural workings 
         """
         
         val = """      vector{i} = vectors{i}.selectAll("path").data(object{i}.features);
@@ -656,43 +674,34 @@ class svgMarkerSymbol(symbol):
 class singleSymbol(object):
     """Single symbol renderer for tracking symbology within a layer"""
     
-    def __init__(self, geoType, parentSymbol, index, cssClassName, layerTransparency):
+    def __init__(self, geoType, parentSymbol, layerTransparency):
         """Initialise the symbol range
-        
+                
         :param geoType: Layer.geometryType() GeometryType of the layer.
         :type geoType: GeometryType  e.g. QGis.WKBPolygon
         
         :param parentSymbol: The parent symbol to use with this layer.
         :type parentSymbol: QgsSymbolV2
-        
-        :param index: Index in the layer output order
-        :type index: int
-        
-        :param cssClassName: Css class name to use.
-        :type cssClassName: str
         
         :param layerTransparency: Transparency setting for the overall layer.
         :type layerTransparency: float
         
         """
         self.__logger = log(self.__class__.__name__) 
-        s = self.symbolFactory(geoType, parentSymbol, index, cssClassName, layerTransparency)
-        self.symbol = s
+        self.symbols = []
+        s = self.symbolFactory(geoType, parentSymbol, layerTransparency)
+        self.symbols.append(s)
         
         
-    def symbolFactory(self, geoType, parentSymbol, index, cssClassName, layerTransparency):
-        """
+    def symbolFactory(self, geoType, parentSymbol, layerTransparency):
+        """Create the supported symbol type, or default to a single symbol
+        
         :param geoType: Layer.geometryType() GeometryType of the layer.
         :type geoType: GeometryType  e.g. QGis.WKBPolygon
         
         :param parentSymbol: The parent symbol to use with this layer.
         :type parentSymbol: QgsSymbolV2
-        
-        :param index: Index in the layer output order
-        :type index: int
-        
-        :param cssClassName: Css class name to use.
-        :type cssClassName: str
+
         
         :param layerTransparency: Transparency setting for the overall layer.
         :type layerTransparency: float
@@ -700,7 +709,9 @@ class singleSymbol(object):
         p = type(parentSymbol)
         
         if p is QgsLineSymbolV2:
-            return simpleLineSymbol(geoType, parentSymbol, index, cssClassName, layerTransparency)
+            """ TODO: Currently Works if parentSymbol.symbolLayer(0) is a QgsSimpleLineSymbolLayerV2
+            Consider supporting QgsMarkerLineSymbolLayerV2, QgsArrowSymbolLayer, or QgsGeometryGeneratorSymbolLayerV2"""
+            return simpleLineSymbol(geoType, parentSymbol, layerTransparency)
         
         elif p is QgsMarkerSymbolV2:
             if parentSymbol.symbolLayer(0) is not None:
@@ -708,24 +719,38 @@ class singleSymbol(object):
                 c = type(parentSymbol.symbolLayer(0))
                 
                 if c is QgsSvgMarkerSymbolLayerV2:
-                    return svgMarkerSymbol(geoType, parentSymbol, index, cssClassName, layerTransparency)
+                    return svgMarkerSymbol(geoType, parentSymbol, layerTransparency)
                 
             # Drop through to simple marker symbol
-            return simpleMarkerSymbol(geoType, parentSymbol, index, cssClassName, layerTransparency)
+            return simpleMarkerSymbol(geoType, parentSymbol, layerTransparency)
         
         elif p is QgsFillSymbolV2:
             if parentSymbol.symbolLayer(0) is not None:
                 #Currently limited to the first symbolLayer
                 c = type(parentSymbol.symbolLayer(0))
                 
-                """ TODO: Implement more complex symbols"""
+                # TODO: Implement more complex symbols
                 if  c is QgsSimpleLineSymbolLayerV2: 
-                    return simpleLineSymbol(geoType, parentSymbol, index, cssClassName, layerTransparency)
+                    return simpleLineSymbol(geoType, parentSymbol, layerTransparency)
                 else:
-                    return simpleFillSymbol(geoType, parentSymbol, index, cssClassName, layerTransparency)
+                    return simpleFillSymbol(geoType, parentSymbol, layerTransparency)
             
             else:
-                return simpleFillSymbol(geoType, parentSymbol, index, cssClassName, layerTransparency) 
+                return simpleFillSymbol(geoType, parentSymbol, layerTransparency) 
+    
+    def setOutputCss(self, index, cssstub):
+        """Set the output index for the layer and the CSS classname stub on the symbols        
+                
+        :param index: Index in the layer output order (those in front have a higher index).
+        :type index: int
+        
+        :param cssstub: The CSS class name used for styling the symbol
+        :type cssstub: string
+        """
+        # TODO: When implementing multiple symbols per renderer each symbol will need a further index adding to the class
+        for s in self.symbols:
+            s.index = index
+            s.css = cssstub
             
     def getFilterExpression(self, isLowest):
         """Get the filter expression for selecting features based on their attribute"""
@@ -739,9 +764,9 @@ class singleSymbol(object):
 class categorized(singleSymbol):
     """Categorized renderer class"""
     
-    def __init__(self, geoType, field, fieldType, category, index, cssClassName, layerTransparency):
+    def __init__(self, geoType, field, fieldType, category, layerTransparency):
         """Initialise the symbol range
-        
+                
         :param geoType: Layer.geometryType() GeometryType of the layer.
         :type geoType: GeometryType  e.g. QGis.WKBPolygon
         
@@ -754,19 +779,14 @@ class categorized(singleSymbol):
         :param category: The category range object.
         :type category: QgsRendererCategoryV2
         
-        :param index: Index in the layer output order
-        :type index: int
-                
-        :param cssClassName: Css class name to use.
-        :type cssClassName: str
-        
         :param layerTransparency: Transparency setting for the overall layer.
         :type layerTransparency: float
         
         """
         self.__logger = log(self.__class__.__name__) 
-        s = self.symbolFactory(geoType, category.symbol(), index, cssClassName, layerTransparency)
-        self.symbol = s
+        self.symbols = []
+        s = self.symbolFactory(geoType, category.symbol(), layerTransparency)
+        self.symbols.append(s)
         
         self.field = field
         self.fieldType = fieldType
@@ -797,7 +817,7 @@ class categorized(singleSymbol):
 class graduated(singleSymbol):
     """Graduated renderer class"""
     
-    def __init__(self, geoType, field, graduation, index, cssClassName, layerTransparency):
+    def __init__(self, geoType, field, graduation, layerTransparency):
         """Initialise the symbol range
         
         :param geoType: Layer.geometryType() GeometryType of the layer.
@@ -809,19 +829,14 @@ class graduated(singleSymbol):
         :param graduation: The graduation range object.
         :type graduation: QgsRendererRangeV2
         
-        :param index: Index in the layer output order
-        :type index: int
-        
-        :param cssClassName: Css class name to use.
-        :type cssClassName: str
-        
         :param layerTransparency: Transparency setting for the overall layer.
         :type layerTransparency: float
         
         """
         self.__logger = log(self.__class__.__name__) 
-        s = self.symbolFactory(geoType, graduation.symbol(), index, cssClassName, layerTransparency)
-        self.symbol = s
+        self.symbols = []
+        s = self.symbolFactory(geoType, graduation.symbol(), layerTransparency)
+        self.symbols.append(s)
         
         self.field = field
         self.label = str(graduation.label())

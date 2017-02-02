@@ -1,9 +1,9 @@
 import os
 
-from PyQt4.QtCore import Qt
-from PyQt4.QtGui import QTreeWidgetItem, QIcon
+from qgis.PyQt.QtCore import Qt
+from qgis.PyQt.QtGui import QTreeWidgetItem, QIcon
 
-from logic import vector
+from layer import vector
 
 class vectorItem(QTreeWidgetItem):
     """User interface item. Wrapper for vector layers to be added to a QTreeWidget"""

@@ -1,7 +1,7 @@
 from qgis.core import *
 from qgis.gui import *
 from qgis.utils import *
-from PyQt4.QtCore import *
+from qgis.PyQt.QtCore import *
 
 from logger import log
 
