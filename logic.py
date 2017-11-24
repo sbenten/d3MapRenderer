@@ -800,7 +800,7 @@ class vector:
             self.fields.append(f.name()) 
             
             # Add numeric fields to the list for visualization
-            if f.typeName() == "Integer" or f.typeName() == "Real":
+            if f.typeName().lower() == "integer" or f.typeName().lower() == "real" or f.typeName().lower() == "integer64":
                 self.vizFields.append(f.name())
             
             # An ID field? Set the default for the ID field option    
