@@ -336,7 +336,7 @@ class winHelper(linuxHelper):
             i = 0
             while 1:
                 name, value, type = self.reg.EnumValue(subkey, i)
-                if name == valName:
+                if name.upper() == valName:
                     self.__logger.info("User environment variables: " + value)
                     paths = value.split(";")
                     for p in paths:
