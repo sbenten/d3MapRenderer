@@ -80,16 +80,22 @@ class singleSymbol:
             outlineColor = sym.color().name()
             outlineTrans = sym.color().alpha()
         elif t is QgsMarkerSymbolV2:
-            outlineWidth = sym.symbolLayer(0).outlineWidth()
-            outlineColor = sym.symbolLayer(0).outlineColor().name()
-            outlineStyle = sym.symbolLayer(0).outlineStyle()
+            try:
+                outlineColor = sym.symbolLayer(0).outlineColor().name()
+                outlineWidth = sym.symbolLayer(0).outlineWidth()
+                outlineStyle = sym.symbolLayer(0).outlineStyle()
+            except AttributeError:
+                outlineStyle = 1
             outlineTrans = sym.symbolLayer(0).outlineColor().alpha()
         elif t is QgsFillSymbolV2:
-            outlineWidth = sym.symbolLayer(0).borderWidth()
-            outlineColor = sym.symbolLayer(0).borderColor().name()
-            outlineStyle = sym.symbolLayer(0).borderStyle()
-            outlineTrans = sym.symbolLayer(0).borderColor().alpha()   
-            brushStyle =  sym.symbolLayer(0).brushStyle()        
+            try:
+			    outlineWidth = sym.symbolLayer(0).borderWidth()
+			    outlineColor = sym.symbolLayer(0).borderColor().name()
+			    outlineTrans = sym.symbolLayer(0).borderColor().alpha() 
+			    outlineStyle = sym.symbolLayer(0).borderStyle()
+			    brushStyle =  sym.symbolLayer(0).brushStyle()
+            except AttributeError:
+                outlineWidth = 0.26        
         else: 
             # no idea what the symbol is, thrash around trying to guess the attributes            
             if sym.symbolLayer(0) is not None:
