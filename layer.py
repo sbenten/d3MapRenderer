@@ -58,7 +58,6 @@ class vector(object):
                 
     def setOutputOrder(self, outIndex):
         """Assign the output order of the layer, so that the various CSS and JavaSripts have the right IDs"""
-        
         cssstub = self.getLayerObjectName(outIndex)          
         for i, r in enumerate(self.renderers):
             r.setOutputCss(i, u"{0}c{1}".format(cssstub, str(i)))

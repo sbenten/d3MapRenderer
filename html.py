@@ -51,7 +51,7 @@ class index(object):
         for i, o in enumerate(self.layersForOutput):
             path = template.format( index = i )
             paths.append(path)
-            paths.append(o.renderers[0].symbols[0].safeSvgNode(selectedProjection.safeCentroid))
+            paths.append(o.renderers[0].symbols[0].safeSvgNode(i, selectedProjection.safeCentroid))
 
         if self.model.showLabels == True:
             labelTemplate = """    var label{index} = void 0;"""
@@ -202,8 +202,8 @@ class index(object):
             v.append(selectedProjection.zoomScalingScript())
             
             ''' Symbol specific scaling script '''
-            for o in self.layersForOutput:
-                v.append(o.renderers[0].symbols[0].zoomScalingScript(selectedProjection.safeCentroid))
+            for i, o in enumerate(self.layersForOutput):
+                v.append(o.renderers[0].symbols[0].zoomScalingScript(i, selectedProjection.safeCentroid))
                 
             template = template.replace("<%vectorscaling%>", "".join(v))
             
@@ -379,8 +379,8 @@ class index(object):
                 layerScript.append(tip)
             else:
                 layerScript.append(";\n\n")
-            
-            scripts.append(o.renderers[0].symbols[0].toLayerScript( "".join(layerScript), self.model.selectedProjection.safeCentroid ) )     
+
+            scripts.append(o.renderers[0].symbols[0].toLayerScript( i, "".join(layerScript), self.model.selectedProjection.safeCentroid ) )     
     
         return "".join(scripts)
  

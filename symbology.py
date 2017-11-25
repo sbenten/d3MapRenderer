@@ -116,14 +116,16 @@ class symbol(object):
         """Retrieve the Css for the symbol"""
         return ""
        
-    def toLayerScript(self, pattern, safeCentroid):
+    def toLayerScript(self, outputIndex, pattern, safeCentroid):
         """Retrieve the layer render script for d3 to use"""        
         output = pattern.format("""        .attr("d", path)\n""")
                 
         return output    
     
-    def zoomScalingScript(self, safeCentroid):
+    def zoomScalingScript(self, outputIndex, safeCentroid):
         """Retrieve the layer zoom script d3 to use
+        
+        :param outputIndex: int The layer order for the output
 
         :param safeCentroid: Check whether the label is clipped on the other side of the globe
                              Othrographic version to  return the JavaScript for creating the SVG text elements
@@ -134,11 +136,13 @@ class symbol(object):
         template = "      vector{index}.style(\"stroke-width\", {width} / d3.event.scale);\n"
         
         return template.format(
-                               index = self.index,
+                               index = outputIndex,
                                width = self.outlineWidth)
         
-    def safeSvgNode(self, safeCentroid):
+    def safeSvgNode(self, outputIndex, safeCentroid):
         """Retrieve any special node creation variables
+        
+        :param outputIndex: int The layer order for the output
 
         :param safeCentroid: Check whether the label is clipped on the other side of the globe
                              Othrographic version to  return the JavaScript for creating the SVG text elements
@@ -309,8 +313,10 @@ class simpleMarkerSymbol(symbol):
         
         return output   
 
-    def toLayerScript(self, pattern, safeCentroid):
+    def toLayerScript(self, outputIndex, pattern, safeCentroid):
         """Retrieve the layer render script for d3 to use
+        
+        :param outputIndex: int The layer order for the output
         
         :param pattern: The string.format to use as the layer JavaScript.
         :type pattern: string
@@ -340,8 +346,10 @@ class simpleMarkerSymbol(symbol):
         
         return output
     
-    def zoomScalingScript(self, safeCentroid):
+    def zoomScalingScript(self, outputIndex, safeCentroid):
         """Retrieve the layer zoom script d3 to use
+        
+        :param outputIndex: int The layer order for the output
 
         :param safeCentroid: Check whether the label is clipped on the other side of the globe
                              Othrographic version to  return the JavaScript for creating the SVG text elements
@@ -366,7 +374,7 @@ class simpleMarkerSymbol(symbol):
       }});\n"""
         
         return template.format(
-                               i = self.index,
+                               i = outputIndex,
                                sym = self.getShape(),
                                cent = centroid)
         
@@ -564,8 +572,10 @@ class svgMarkerSymbol(symbol):
         
         return output   
 
-    def toLayerScript(self, pattern, safeCentroid):
+    def toLayerScript(self, outputIndex, pattern, safeCentroid):
         """Retrieve the layer render script for d3 to use.
+        
+        :param outputIndex: int The layer order for the output
         
         :param pattern: The string.format to use as the layer JavaScript.
         :type pattern: string
@@ -611,7 +621,7 @@ class svgMarkerSymbol(symbol):
             centroid = "getSafeCentroid(d)"
         
         output = val.format(
-            i = self.index,
+            i = outputIndex,
             svg = tail,
             cent = centroid)
                     
@@ -619,8 +629,10 @@ class svgMarkerSymbol(symbol):
         
         return output        
     
-    def zoomScalingScript(self, safeCentroid):
+    def zoomScalingScript(self, outputIndex, safeCentroid):
         """Retrieve the layer zoom script d3 to use
+        
+        :param outputIndex: int The layer order for the output
 
         :param safeCentroid: Check whether the label is clipped on the other side of the globe
                              Othrographic version to  return the JavaScript for creating the SVG text elements
@@ -652,12 +664,14 @@ class svgMarkerSymbol(symbol):
       }});\n"""
         
         return template.format(
-                               i = self.index,
+                               i = outputIndex,
                                cent = centroid,
                                img = imgReload)
     
-    def safeSvgNode(self, safeCentroid):
+    def safeSvgNode(self, outputIndex, safeCentroid):
         """Retrieve any special node creation variables
+        
+        :param outputIndex: int The layer order for the output
 
         :param safeCentroid: Check whether the label is clipped on the other side of the globe
                              Othrographic version to  return the JavaScript for creating the SVG text elements
@@ -666,7 +680,7 @@ class svgMarkerSymbol(symbol):
 
         """
         if safeCentroid == True:
-            return """    var vector{0}Node = void 0;\n""".format(self.index)
+            return """    var vector{0}Node = void 0;\n""".format(outputIndex)
         else:
             return ""
         
