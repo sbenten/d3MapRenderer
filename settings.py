@@ -20,7 +20,7 @@ class globalSettings(object):
         return  outPath         
         
     def webServerUrl(self):
-        return self.s.value("d3MapRenderer/WebServerUrl", u"http://127.0.0.1:8080/")
+        return self.s.value("d3MapRenderer/WebServerUrl", u"http://localhost/")
         
     def outputFormat(self):
         return self.p.readEntry("d3MapRenderer", "OutputFormat", u"TopoJson")[0]
