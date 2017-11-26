@@ -7,7 +7,6 @@
      (at your option) any later version.
 
 """
-from nt import getcwd
 
 __author__ = 'swbenten@gmail.com'
 __date__ = '2015-10-09'
@@ -16,9 +15,6 @@ __copyright__ = 'Copyright 2015, Simon Benten'
 import imp
 import unittest
 import os
-
-from qgis.core import *
-from qgis.gui import *
 
 gisWrapper = imp.load_source('*', '../gisWrapper.py')
 
@@ -30,8 +26,8 @@ class TestGisWrapper(unittest.TestCase):
         """Runs before each test."""  
         self.qgis = gisWrapper.qgisWrapper() 
         self.layer = None 
-        self.srcpath = os.path.join(getcwd(), "src")
-        self.destpath = os.path.join(getcwd(), "out")   
+        self.srcpath = os.path.join(os.getcwd(), "src")
+        self.destpath = os.path.join(os.getcwd(), "out")   
         self.shapefile = "ne__admin_countries_simp.shp"  
         self.objname = "something"     
         pass
@@ -39,17 +35,19 @@ class TestGisWrapper(unittest.TestCase):
     def tearDown(self):
         """Runs after each test."""
         
-        del self.destLayer        
+        del self.layer   
+        filelist = [ f for f in os.listdir(self.destpath) if f.endswith(".forcecreation") == False ]
+        for f in filelist:
+            os.remove(os.path.join(self.destpath, f))     
         pass
     
-    def testOpen(self):        
+    def testOpenSave(self):        
         self.layer = self.qgis.openShape(os.path.join(self.srcpath, self.shapefile), self.objname)         
         self.assertTrue(self.layer is not None, "Failed to open the shapefile")
-        self.assertTrue(self.layer.name == self.objname, "Layer name not set correctly")
+        self.assertTrue(self.layer.name() == self.objname, "Layer name not set correctly")
         
-    def testSave(self):
-        self.qgis.saveShape(self.layer, os.path.join(self.destpath, self.shapeFile))
-        self.assertTrue(os.path.isfile(os.path.join(self.destpath, self.shapeFile)), "Failed to save the shapefile. Shapefile doesn't exist where expected.")
+        self.qgis.saveShape(self.layer, os.path.join(self.destpath, self.shapefile))
+        self.assertTrue(os.path.isfile(os.path.join(self.destpath, self.shapefile)), "Failed to save the shapefile. Shapefile doesn't exist where expected.")
     
 if __name__ == '__main__':
     unittest.main()

@@ -283,11 +283,17 @@ class simpleMarkerSymbol(symbol):
             '''No width property in a simple marker
             self.outlineWidth = parentSymbol.width()'''
             ''' d3 symbols are sized 64 by default '''
-            self.size = str(parentSymbol.size())           
+            self.size = str(parentSymbol.size() * 10)           
             self.outlineColor = parentSymbol.symbolLayer(0).outlineColor().name()
             self.outlineTrans = self.cssHelper.convertColorTransToCssOpacity(parentSymbol.symbolLayer(0).outlineColor().alpha())
             self.outlineStyle = parentSymbol.symbolLayer(0).outlineStyle()
-            self.name = parentSymbol.symbolLayer(0).name()
+            try:
+                self.name = parentSymbol.symbolLayer(0).name()
+            except (AttributeError, TypeError):
+                self.__logger.error2()
+                '''No name property on an Ellipse marker, but there is a symbolName, try that
+                QgsEllipseSymbolLayerV2 is a subclass of QgsMarkerSymbolLayerV2 so we could end up in this code'''
+                self.name =parentSymbol.symbolLayer(0).symbolName()
             self.legendHeight = self.size
             
         except (AttributeError, TypeError):
@@ -522,7 +528,7 @@ class svgMarkerSymbol(symbol):
             self.colorTrans = self.cssHelper.convertColorTransToCssOpacity(parentSymbol.color().alpha())
             self.symbolTrans = parentSymbol.alpha()
             self.outlineWidth = parentSymbol.symbolLayer(0).outlineWidth() * 4
-            self.size = str(parentSymbol.size())           
+            self.size = str(parentSymbol.size() * 3)           
             self.outlineColor = parentSymbol.symbolLayer(0).outlineColor().name()
             self.outlineTrans = self.cssHelper.convertColorTransToCssOpacity(parentSymbol.symbolLayer(0).outlineColor().alpha())
             self.path = parentSymbol.symbolLayer(0).path()
